@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+//    "module": "system",
+    "noImplicitAny": true,
+    "removeComments": true,
+    "preserveConstEnums": true,
+    "outFile": "dist/app.js",
+    "sourceMap": true
+  },
+  "lib": [
+//    "dom",
+    "es5",
+    "es2015.promise"
+  ]
+  "include": [
+    "src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

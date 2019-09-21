@@ -1,0 +1,23 @@
+{
+  "name": "json-api-sdk",
+  "version": "0.0.1",
+  "description": "test",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/codexsoft/json-api-sdk.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/codexsoft/json-api-sdk/issues"
+  },
+  "homepage": "https://github.com/codexsoft/json-api-sdk#readme",
+  "dependencies": {
+    "jquery": "^3.4.1",
+    "lodash": "^4.17.15"
+  }
+}
