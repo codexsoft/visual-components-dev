@@ -1,7 +1,3 @@
-// async function get(): Promise<Object> {
-//     return new Promise<Object>();
-// }
-
 async function get(url) : Promise<string> {
     return new Promise<string>((resolve, reject) => {
         var xhr = new XMLHttpRequest();

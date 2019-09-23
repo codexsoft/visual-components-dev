@@ -1,6 +1,7 @@
-import {LoggerInterface} from "./LoggerInterface";
-import _ from 'lodash';
-import $ from 'jquery';
+import LoggerInterface from "./LoggerInterface";
+import Signal from './Signal';
+import * as _ from 'lodash';
+import * as $ from 'jquery';
 
 export default abstract class VisualComponent {
 
@@ -67,7 +68,7 @@ export default abstract class VisualComponent {
 
         this.logger.log( 'Сконструирован компонент ' + this.debugName() );
         this._configurate( parameters );
-        le.console.minor( 'Инициализация компонента ' + this.debugName() );
+        this.logger.minor( 'Инициализация компонента ' + this.debugName() );
         this.init( parameters );
 
     }
@@ -83,7 +84,7 @@ export default abstract class VisualComponent {
         let exportObj = {};
         _.forEach( this, ( value, key ) => {
 
-            if (in_array(key,[
+            if (_.includes([
                     'id',
                     'isSimple',
                     '_jsxProvidedChildren',
@@ -95,7 +96,7 @@ export default abstract class VisualComponent {
                     'props',
                     'selfUrl',
                     'layout',
-                ])) return;
+                ], key)) return;
             exportObj[key] = value;
 
         });
@@ -113,20 +114,20 @@ export default abstract class VisualComponent {
 
         let stringified = JSON.stringify(parameters);
         if ( stringified.length <= 200 ) {
-            le.console.minor('configurating '+this.getClass()+' using params: '+stringified);
+            this.logger.minor('configurating '+this.getClass()+' using params: '+stringified);
         } else {
-            le.console.minor('configurating '+this.getClass());
+            this.logger.minor('configurating '+this.getClass());
         }
 
         if (!_.isEmpty(parameters))
-            le.console.minor(parameters);
+            this.logger.minor(parameters);
 
         _.forEach( parameters, ( value, key ) => {
 
             self[key] = value;
         } );
 
-        le.console.minor(this);
+        this.logger.minor(this);
 
     }
 
@@ -301,7 +302,7 @@ export default abstract class VisualComponent {
     protected confirm( text: string, handlers: Object ) {
 
         if ( typeof window['Component']['Common__Dialog__Confirm'] === 'undefined' ) {
-            le.console.error('Component.Common__Dialog__Confirm VisualComponent not found!!!');
+            this.logger.error('Component.Common__Dialog__Confirm VisualComponent not found!!!');
             return;
         }
 
@@ -331,7 +332,7 @@ export default abstract class VisualComponent {
      */
     public prerenderedContentUpdate(content: string, id: string = null ) {
 
-        le.console.major('Обновление контента компонента '+id+' и реактивация!');
+        this.logger.major('Обновление контента компонента '+id+' и реактивация!');
 
         // TODO: replace может разрушить связь с переменными, указывающими на прежний элемент
         this.$element().replaceWith( content );
@@ -406,11 +407,11 @@ export default abstract class VisualComponent {
 
         if ( this.TERMINATE_EVENTS ) {
 
-            le.console.minor( '[ BIND EVENTS ] Включено терминирование событий мыши по умолчанию.' );
+            this.logger.minor( '[ BIND EVENTS ] Включено терминирование событий мыши по умолчанию.' );
             this.$element().on( this.TERMINATE_EVENTS, ( e: Event ) => {
 
-                if (!in_array(e.type,['mousemove','mouseover','mouseout','mouseleave','mouseenter','mouseup','mousedown'])) {
-                    le.console.minor('Event '+e.type+' terminated in '+this.getClass());
+                if (!_.includes(['mousemove','mouseover','mouseout','mouseleave','mouseenter','mouseup','mousedown'], e.type)) {
+                    this.logger.minor('Event '+e.type+' terminated in '+this.getClass());
                 }
 
                 e.stopPropagation();
@@ -423,7 +424,7 @@ export default abstract class VisualComponent {
         if ( _.isEmpty( eventHandlers ) ) return;
 
         $.each( eventHandlers, ( eventName, handler ) => {
-            le.console.minor( '[ BIND EVENTS ] Регистрация обработчика события: ' + eventName );
+            this.logger.minor( '[ BIND EVENTS ] Регистрация обработчика события: ' + eventName );
             this.$element().off(eventName); // снимаем существующий обработчик, если был
             this.$element().on( eventName, handler );
         } );
@@ -437,7 +438,7 @@ export default abstract class VisualComponent {
      */
     public __start() {
         this.__startListenEvents();
-        le.console.minor('Активация компонента '+this.debugName());
+        this.logger.minor('Активация компонента '+this.debugName());
         le.keyboard.registerCombos( this.id, this.listenKeyboard() );
         this.activate(); // TODO: сделать на promise-ах
     }
@@ -447,7 +448,7 @@ export default abstract class VisualComponent {
      * @private
      */
     public __stop() {
-        le.console.minor('Деактивация компонента '+this.debugName());
+        this.logger.minor('Деактивация компонента '+this.debugName());
         le.keyboard.unregisterCombosForComponent( this.id );
         this.deactivate();
     }
@@ -472,7 +473,7 @@ export default abstract class VisualComponent {
     }
 
     /**
-     * Вычислить классы всех предков, начиная от VisualComponent
+     * Вычислить классы всех предков данного класса, начиная от VisualComponent
      * TODO: кроссбраузерно?
      * @param foundAncestors array
      * @returns array
@@ -501,7 +502,7 @@ export default abstract class VisualComponent {
     public trigger( name: string, parameters: Object = {} ): VisualComponent {
 
         if ( !this.$element().length ) {
-            le.console.notice('Failed to trigger event by component '+this.debugName()+': no viewport element tied!');
+            this.logger.notice('Failed to trigger event by component '+this.debugName()+': no DOM element tied!');
             return this;
         }
 
@@ -511,10 +512,10 @@ export default abstract class VisualComponent {
             +name;
 
         msg += ( _.isEmpty(parameters) ? ' without parameters' : ' providing parameters:' );
-        le.console.minor(msg);
+        this.logger.minor(msg);
 
         if ( !_.isEmpty(parameters) )
-            le.console.minor(parameters);
+            this.logger.minor(parameters);
         this.$element().triggerEvent( name, parameters );
         return this;
 
@@ -547,7 +548,7 @@ export default abstract class VisualComponent {
     protected renderJsTemplate( templateName: string, parameters: Object = {} ): string {
 
         if ( typeof _ == 'undefined' ) {
-            le.console.error( 'Cannot render javascript template ' + templateName + ' - required lodash module is undefined!' );
+            this.logger.error( 'Cannot render javascript template ' + templateName + ' - required lodash module is undefined!' );
             return '';
         }
 
@@ -567,7 +568,7 @@ export default abstract class VisualComponent {
             this.logger.log( parameters );
             let templateString = $( '#' + templateId ).html();
             if ( !templateString ) {
-                le.console.error( 'Template ' + templateId + ' not found!' );
+                this.logger.error( 'Template ' + templateId + ' not found!' );
                 return '';
             }
             compiled = _.template( templateString, {variable: 'data'} );
@@ -577,7 +578,7 @@ export default abstract class VisualComponent {
         try {
             return compiled( parameters );
         } catch ( e ) {
-            le.console.error('Exception while compiling template '+templateName+': '+e.toString());
+            this.logger.error('Exception while compiling template '+templateName+': '+e.toString());
             return '';
         }
 
@@ -630,7 +631,7 @@ export default abstract class VisualComponent {
 
     public displaySimple( options: Object = {} ): JQueryPromise<Element> {
 
-        le.console.notice('displaying simple...');
+        this.logger.notice('displaying simple...');
 
         let dfd = $.Deferred();
 
@@ -645,7 +646,7 @@ export default abstract class VisualComponent {
                 if ( _.isElement( content ) ) {
 
                     // вообще это редкий случай. такое возможно, если render сделан как JSX, который не массив возвращает
-                    le.console.notice('not implemented!');
+                    this.logger.notice('not implemented!');
 
                 } else if ( _.isArray( content ) ) { // JSX array-based render
 
@@ -660,7 +661,7 @@ export default abstract class VisualComponent {
 
                 } else if ( _.isString( content ) ) {
 
-                    le.console.notice('content cannot be string!');
+                    this.logger.notice('content cannot be string!');
 
                     // это может быть backend-рендеринг или шаблонный JST-рендер
                     // string содержит только внутренний контент
@@ -699,7 +700,7 @@ export default abstract class VisualComponent {
                 if ( _.isElement( content ) ) {
 
                     // вообще это редкий случай. такое возможно, если render сделан как JSX, который не массив возвращает
-                    le.console.notice('not implemented!');
+                    this.logger.notice('not implemented!');
 
                 } else if ( _.isArray( content ) ) { // JSX array-based render
 
@@ -707,7 +708,7 @@ export default abstract class VisualComponent {
 
                         let container = this.createContainer();
 
-                        if ( in_array(resultElement.tagName,['COMPONENT']) && $(resultElement).contents().length) {
+                        if ( _.includes(['COMPONENT'], resultElement.tagName) && $(resultElement).contents().length) {
                             // может быть аттрибуты DIV копировать?..
 
                             while ( $(resultElement).contents().length == 1 && $(resultElement).contents().first().get(0).tagName == 'COMPONENT' ) {
@@ -898,14 +899,14 @@ export default abstract class VisualComponent {
      */
     _signalBubble( signal: Signal ) {
 
-        le.console.minor( 'Всплытие сигнала вверх...' );
+        this.logger.minor( 'Всплытие сигнала вверх...' );
 
         let parentModel = this.__up();
 
         try {
             expect( parentModel, 'Родительский компонент не обнаружен!' );
         } catch ( e ) {
-            le.console.error( e.message );
+            this.logger.error( e.message );
             return;
         }
 
@@ -1014,7 +1015,7 @@ export default abstract class VisualComponent {
 
         if ( this[handlerMethodName] ) {
 
-            le.console.info('Handling signal in component ' + this.debugName() + ' via method ' + handlerMethodName );
+            this.logger.info('Handling signal in component ' + this.debugName() + ' via method ' + handlerMethodName );
             continueBubbling = this[handlerMethodName](signal); // will be undefined by default!
 
         } else if ( this.listenSignals()[signal.name] ) {
@@ -1028,12 +1029,12 @@ export default abstract class VisualComponent {
 
         } else {
 
-            le.console.minor( 'Handling signal by customSignalHandler in ' + this.debugName() );
+            this.logger.minor( 'Handling signal by customSignalHandler in ' + this.debugName() );
             let customResult = this.customSignalHandler(signal);
             if ( customResult !== null )
                 continueBubbling = customResult;
             else
-                le.console.minor( 'Signal handler not set in ' + this.debugName() );
+                this.logger.minor( 'Signal handler not set in ' + this.debugName() );
 
         }
 
@@ -1041,7 +1042,7 @@ export default abstract class VisualComponent {
             this._signalBubble( signal );
         }
         else {
-            le.console.minor( 'Signal '+signal.name+' bubbling stopped!' );
+            this.logger.minor( 'Signal '+signal.name+' bubbling stopped!' );
         }
 
     }

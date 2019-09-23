@@ -1,6 +1,6 @@
-import _ from 'lodash';
-import $ from 'jquery';
-import {LoggerInterface} from "./LoggerInterface";
+import * as _ from 'lodash';
+import * as $ from 'jquery';
+import LoggerInterface from "./LoggerInterface";
 
 export class Sdk {
 
@@ -128,7 +128,7 @@ export class Sdk {
                     parsedResponse = JSON.parse(response.responseText);
                 } catch ( e ) {
                     if ( 'statusText' in response ) {
-                        le.console.timeerror('Ошибка: '+response.statusText);
+                        this.logger.timeerror('Ошибка: '+response.statusText);
                     }
                     return process.reject( {}, false);
                     // return;
@@ -180,20 +180,21 @@ export class Sdk {
 
                     }
 
-                    le.console.timeerror('Сервер сообщил, что команда не была выполнена: '+resultCodeExplanation+'. '+errorDesc);
+                    this.logger.timeerror('Сервер сообщил, что команда не была выполнена: '+resultCodeExplanation+'. '+errorDesc);
 
                     if ( parsedResponse.exceptions ) {
 
-                        le.console.group('Исключительные ситуации при выполнении команды:');
-                        _.forEach(parsedResponse.exceptions, function (exceptionText) {
+                        this.logger.group('Исключительные ситуации при выполнении команды:');
+                        // _.forEach(parsedResponse.exceptions, function (exceptionText) {
+                        _.forEach(parsedResponse.exceptions, (exceptionText) => {
                             this.logger.log(exceptionText);
                         });
-                        le.console.close();
+                        this.logger.close();
 
                     }
 
                     if ( parsedResponse.log )
-                        le.console.display_log( parsedResponse.log );
+                        this.logger.display_log( parsedResponse.log );
 
                 }
 

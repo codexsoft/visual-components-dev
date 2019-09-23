@@ -15,7 +15,7 @@
  */
 import VisualComponent from "./VisualComponent";
 
-class Signal {
+export default class Signal {
 
     public name = null;
     public data: any = {};

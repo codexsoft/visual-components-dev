@@ -1,6 +1,7 @@
-import _ from 'lodash';
-import $ from 'jquery';
-import {LoggerInterface} from "./LoggerInterface";
+import * as $ from 'jquery';
+import * as _ from 'lodash';
+import LoggerInterface from "./LoggerInterface";
+import VisualComponent from "./VisualComponent";
 
 /**
  * Реестр визуальных компонентов
@@ -65,47 +66,25 @@ export default class Components {
 
     public activatePrerendered( $element: JQuery, componentClass, params: Object = {} ) {
 
-        le.console.space();
-        le.console.major('Активация компонента '+Detect.className(componentClass)+', предварительно отрендеренного сервером: ');
+        this.logger.space();
+        this.logger.major('Активация компонента '+Detect.className(componentClass)+', предварительно отрендеренного сервером: ');
 
         try {
-            // $('#<?= $_this->getRtid() ?>').assignComponentToPrerendered( <?= $_this->getJsClassName() ?>, <?= $_this->exportPropertiesAsJson() ?> );
             $element.assignComponentToPrerendered( componentClass, params );
         } catch ( e ) {
-            le.console.error('Error while initializing component: '+e.message);
-            // le.console.error('Error while initializing component <?= $_this->getRtid() ?>: '+e.message);
+            this.logger.error('Error while initializing component: '+e.message);
+            // this.logger.error('Error while initializing component <?= $_this->getRtid() ?>: '+e.message);
             this.logger.log( e );
         }
-
-        // original code:
-        //le.console.space();
-        //le.console.major('Активация компонента, предварительно отрендеренного сервером: <?= $_this->getJsClassName() ?>');
-
-        //try {
-        //    $('#<?= $_this->getRtid() ?>').assignComponentToPrerendered( <?= $_this->getJsClassName() ?>, <?= $_this->exportPropertiesAsJson() ?> );
-        //} catch ( e ) {
-        //    le.console.error('Error while initializing component <?= $_this->getRtid() ?>: '+e.message);
-        //    this.logger.log( e );
-        //}
 
     }
 
     public stopComponentsInNode( node: Element ): void {
         // TODO: а не включить ли .add(node) сюда?
-        // this.logger.log('stopping ComponentsInNode');
-        // this.logger.log(node);
         let $components = $(node).find('.VisualComponent');
-        // this.logger.log($components.get());
-        // _.forEach( $components.get(), function(component) {
         _.forEach( $components, function(component: HTMLElement) {
             $(component).model().__stop();
-            // $component.model().__stop();
-            // this.logger.log(component);
         } );
-        // if ( $components.length ) {
-        //     $components.model().__stop();
-        // }
-        // $(node).find('.VisualComponent').model().__stop();
     }
 
     private renderChildren( children: Array<any> ): JQueryPromise<Array<Element>|{}> {
@@ -114,75 +93,39 @@ export default class Components {
         let pendingRenderingElements = [];
         let providedChildren = [];
 
-        // if ( _.isArray(children) && children.length == 1 && _.isArray(children[0]) )
-        //     children = <Array<any>>children[0];
-
-        // debugger;
-        // this.logger.log('rendering children');
-        // this.logger.log(children);
-
         _.forEach( children, childNode => {
 
             if ( _.isString(childNode) ) {
-                // this.logger.log('Adding child text node '+childNode);
                 pendingRenderingElements.push(document.createTextNode(childNode));
             } else if ( childNode instanceof HTMLElement ) {
                 pendingRenderingElements.push(childNode);
-                // } else if ( childNode instanceof Node ) {
-                //     pendingRenderingElements.push(childNode);
             } else if ( _.isArray(childNode) ) {
                 // а надо ли нам сразу рендерить вложенные компоненты? Ведь в компонент они будут переданы параметром,
                 // и не факт что будут использованы... Ну ладно, пока так
-
-                // debugger;
-
-                // if ( childNode.length == 1 && _.isArray(childNode[0]) ) {
-                // if ( childNode.length == 1 ) {
-                //     debugger;
-                //     childNode = <Array<any>>childNode[0];
-                // }
-
-                // if ( childNode.length == 4 ) {
-                //     le.console.error('Expect wrong...');
-                // }
 
                 if ( _.isElement(childNode[0]) ) {
                     _.forEach( childNode, ( elem ) => {
                         pendingRenderingElements.push( elem );
                     } );
-                    // pendingRenderingElements.push( childNode );
-                    // pendingRenderingElements.push( le.components.renderJsxArray(childNode) );
                 } else {
-                    // pendingRenderingElements.push( le.components.renderJsxArray(childNode) );
                     pendingRenderingElements.push( jsx(childNode) );
-                    // pendingRenderingElements.push( childNode );
 
                 }
 
-                // pendingRenderingElements.push( le.components.renderJsxArray(childNode) );
             } else if ( childNode instanceof VisualComponent ) {
-                // pendingRenderingElements.push( le.components.renderJsxArray(childNode) );
                 pendingRenderingElements.push( jsx(childNode) );
             }
 
         } );
 
         $.when( ...pendingRenderingElements ).done(( ...generatedChildren )=> {
-
-            // _.forEach(generatedChildren, ( generatedChild ) => {
-            //     providedChildren.push(generatedChild);
-            // });
-
-            // def.resolve( providedChildren );
             def.resolve( generatedChildren );
-
         });
 
         return def.promise();
 
     }
 
-    // public renderJsxArray( type, config: Object = {}, ...children: Array<any>): JQueryPromise<HTMLElement|Comment> {
     public renderJsxArray( type, config: Object = {}, ...children: Array<any>): JQueryPromise<HTMLElement|{}> {
 
         // если передан один параметр и он массив, то вытаскиваем параметры
@@ -221,8 +164,6 @@ export default class Components {
         let attributes = config || {};
         let generatedElement: HTMLElement;
 
-        // children = _.flatten(children);
-
         if ( _.isString(type) ) {
 
             // специальные теги
@@ -230,12 +171,12 @@ export default class Components {
             if ( type == 'for' ) {
 
                 if ( !('each' in attributes) ) {
-                    le.console.warn('Incorrect "each" attribute in FOREACH statement!');
+                    this.logger.warn('Incorrect "each" attribute in FOREACH statement!');
                     def.resolve( new Comment );
                 }
 
                 if ( !('do' in attributes) ) {
-                    le.console.warn('Incorrect "do" attribute in FOREACH statement!');
+                    this.logger.warn('Incorrect "do" attribute in FOREACH statement!');
                     def.resolve( new Comment );
                 }
 
@@ -249,7 +190,6 @@ export default class Components {
                     iterator++;
                 });
 
-                // this.renderJsxArray('component',{},result).done((rendered)=>{
                 jsx('component',{},result).done((rendered)=>{
                     def.resolve( rendered );
                 });
@@ -266,7 +206,7 @@ export default class Components {
 
                 else if ( !('not' in attributes || 'pass' in attributes) ) {
 
-                    le.console.warn('Incorrect condition in IF statement!');
+                    this.logger.warn('Incorrect condition in IF statement!');
                     def.resolve( new Comment );
 
                 } else if ( 'then' in attributes ) {
@@ -277,11 +217,10 @@ export default class Components {
 
                     let thenClosure = attributes['then'];
                     if (!_.isFunction(thenClosure)) {
-                        le.console.warn('Incorrect THEN attribute in IF statement!');
+                        this.logger.warn('Incorrect THEN attribute in IF statement!');
                         def.resolve( new Comment );
                     }
                     let result = thenClosure();
-                    // this.renderJsxArray('component',{},result).done((rendered)=>{
                     jsx('component',{},result).done((rendered)=>{
                         def.resolve( rendered );
                     });
@@ -295,7 +234,7 @@ export default class Components {
 
                 let strictMode = false;
                 if ( 'strict' in attributes ) {
-                    strictMode = !in_array(attributes['strict'],['false',false]);
+                    strictMode = !_.includes(['false',false], attributes['strict']);
                 }
 
                 let matchedCase = null;
@@ -334,18 +273,7 @@ export default class Components {
             generatedElement = document.createElement(type);
             le.components.applyAttributesToElement( generatedElement, attributes );
 
-            // if ( type == 'form' ) {
-            //     this.logger.log('children to render of '+type);
-            //     this.logger.log(children);
-            // }
-
             $.when( le.components.renderChildren( children ) ).done(( renderedChildren: Array<Element> )=>{
-
-                // if ( type == 'form' ) {
-                //     this.logger.log('rendered children of '+type);
-                //     this.logger.log(renderedChildren);
-                // }
-
 
                 _.forEach(renderedChildren,renderedChild => {
 
@@ -395,23 +323,6 @@ export default class Components {
                 delete attributes['config'];
             }
 
-            // let w = Detect.className(type);
-            // let x = _.isFunction(type);
-            // let y = _.isObject(type);
-            // let z = _.isObjectLike(type);
-            // let z1 = type instanceof VisualComponent;
-            // if ( _.isFunction(type) ) {
-            //     let z2 = new type(initParams);
-            //     let z3 = z2.getAncestors();
-            // }
-
-            // let isVC = ( _.isFunction(type) && type instanceof VisualComponent );
-            // let isVC = Detect.isVisualComponent(type);
-            // debugger;
-
-            // if ( _.isFunction(type) && type instanceof VisualComponent ) {
-            // if ( !(type instanceof VisualComponent) ) {
-
             // в простом случае у нас не визуальный компонент, а функция. Причем она может возвращать JSX.
             if ( !Detect.isVisualComponent(type) ) {
 
@@ -449,24 +360,11 @@ export default class Components {
 
                 });
 
-                // $.when( type(initParams) ).done(result => {
-                //     debugger;
-                //     $.when(this.renderJsxArray(result)).done(rendered => {
-                //         debugger;
-                //         def.resolve( rendered );
-                //     });
-                //
-                // });
-
-                // debugger;
-
-                // return def.promise();
-
             } else { // иначе считаем что это компонент (или его конструктор)
 
                 let generatedComponent: VisualComponent;
 
-                if ( _.isFunction(type) ) {
+                if (typeof type === 'function') {
                     generatedComponent = new type(initParams);
                 } else if ( _.isObject(type) && type instanceof VisualComponent ) {
 
@@ -516,8 +414,6 @@ export default class Components {
 
             if ( _.startsWith(attribute,'on') ) { // а если аттрибут типа onetwo = '123'?
 
-                // element.addEventListener(attribute.substring(2), <EventListener>value);
-
                 $(element).off(attribute.substring(2)); // снимаем существующий обработчик, если был
                 $(element).on( attribute.substring(2), <EventListener>value );
 
@@ -533,10 +429,6 @@ export default class Components {
         });
 
     }
-
-
-
-
 
     /**
      * Генерирует следующий по счету ID для нового визуального компонента
@@ -568,7 +460,3 @@ export default class Components {
     }
 
 }
-
-// namespace le {
-//     export let components: modules.Components = new modules.Components;
-// }
