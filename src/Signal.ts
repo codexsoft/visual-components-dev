@@ -17,17 +17,19 @@ import VisualComponent from "./VisualComponent";
 
 export default class Signal {
 
-    public name = null;
+    public name: string|null = null;
     public data: any = {};
-    public trigger: VisualComponent = null;
-    public trip = [];
+    public trigger: VisualComponent|null = null;
+    public trip: VisualComponent[] = [];
 
-    public by( component ) {
+    public by(component: VisualComponent): boolean {
         return component == this.trigger;
     }
 
-    from( component ) {
-        return this.trip.some( function( current ){ return component == current; } );
+    public from(component: VisualComponent): boolean {
+        return this.trip.some(function(current) {
+            return component == current;
+        });
     }
 
 }

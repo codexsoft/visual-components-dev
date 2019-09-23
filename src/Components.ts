@@ -2,6 +2,8 @@ import * as $ from 'jquery';
 import * as _ from 'lodash';
 import LoggerInterface from "./LoggerInterface";
 import VisualComponent from "./VisualComponent";
+import NullLogger from "./NullLogger";
+import Detect from "./Detect";
 
 /**
  * Реестр визуальных компонентов
@@ -11,7 +13,7 @@ export default class Components {
     private logger: LoggerInterface;
 
     constructor(logger: LoggerInterface|null) {
-        this.logger = logger;
+        this.logger = logger || new NullLogger();
     }
 
     /**
@@ -87,13 +89,13 @@ export default class Components {
         } );
     }
 
-    private renderChildren( children: Array<any> ): JQueryPromise<Array<Element>|{}> {
+    private renderChildren( children: Array<any> ): Promise<Array<Element>|{}> {
 
-        let def = $.Deferred();
-        let pendingRenderingElements = [];
+        // let def = $.Deferred();
+        let pendingRenderingElements: any[] = [];
         let providedChildren = [];
 
-        _.forEach( children, childNode => {
+        _.forEach(children, async childNode => {
 
             if ( _.isString(childNode) ) {
                 pendingRenderingElements.push(document.createTextNode(childNode));
@@ -103,30 +105,292 @@ export default class Components {
                 // а надо ли нам сразу рендерить вложенные компоненты? Ведь в компонент они будут переданы параметром,
                 // и не факт что будут использованы... Ну ладно, пока так
 
-                if ( _.isElement(childNode[0]) ) {
-                    _.forEach( childNode, ( elem ) => {
-                        pendingRenderingElements.push( elem );
+                if (_.isElement(childNode[0])) {
+                    _.forEach(childNode, (elem) => {
+                        pendingRenderingElements.push(elem);
                     } );
                 } else {
-                    pendingRenderingElements.push( jsx(childNode) );
+                    pendingRenderingElements.push(await this.renderJsxArray(childNode));
 
                 }
 
             } else if ( childNode instanceof VisualComponent ) {
-                pendingRenderingElements.push( jsx(childNode) );
+                pendingRenderingElements.push(await this.renderJsxArray(childNode));
+                // pendingRenderingElements.push( jsx(childNode) );
             }
 
         } );
 
-        $.when( ...pendingRenderingElements ).done(( ...generatedChildren )=> {
-            def.resolve( generatedChildren );
+        return new Promise<Element[]>(async (resolve, reject) => {
+            // Promise.all(pendingRenderingElements).then((...generatedChildren) => {
+            Promise.all(pendingRenderingElements).then((generatedChildren) => {
+                resolve(<Element[]><unknown>generatedChildren);
+            });
         });
 
-        return def.promise();
+
+
+        // $.when( ...pendingRenderingElements ).done(( ...generatedChildren )=> {
+        //     def.resolve( generatedChildren );
+        // });
+
+        // return def.promise();
 
     }
 
-    public renderJsxArray( type, config: Object = {}, ...children: Array<any>): JQueryPromise<HTMLElement|{}> {
+    private async renderJsxFromNotVisualComponent(type: string, attributes: Object|any = {}, resolve: Function): Promise<Node> {
+
+        Promise.all(children).then((renderedChildren: Array<Element>) => {
+
+            Promise.all(type({
+                providedAttributes: attributes,
+                providedChildren: renderedChildren,
+            }).then((result) => {
+                if (_.isArray(result) === false) {
+                    return resolve( $(result).get(0) );
+                }
+
+                Promise.all(this.renderJsxArray(result)).then(rendered => {
+                    // вычисляем значение аттрибута CSS-классов
+                    if (attributes['class']) {
+                        $(rendered).addClass(attributes['class']);
+                        delete attributes['class'];
+                    }
+
+                    // вешаем указанные в аттрибутах события или же устанавливаем эти самые аттрибуты
+                    // это и для компонента, и для обычного тега
+
+                    this.applyAttributesToElement(rendered, attributes);
+                    return resolve(rendered);
+                });
+            }));
+
+        });
+
+    }
+
+    private async renderJsxFromVisualComponent(type: string, attributes: Object|any, initParams: Object|any, resolve: Function): Promise<Node> {
+        let generatedComponent: VisualComponent;
+
+        if (typeof type === 'function') {
+            generatedComponent = new type(initParams);
+        // } else if ( _.isObject(type) && type instanceof VisualComponent ) {
+        } else if ((typeof type === 'object') && (type instanceof VisualComponent)) {
+
+            // если элемент - уже существующий визуальный компонент
+            generatedComponent = type;
+
+        }
+
+        if (generatedComponent instanceof VisualComponent === false) {
+            throw new Error(Detect.className(type)+' poor VisualComponent generator/instance!');
+        }
+        // expect( generatedComponent instanceof VisualComponent, Detect.className(type)+' poor VisualComponent generator/instance!' );
+
+        let renderedChildren: Array<Element> = await this.renderChildren(children);
+        let generatedElement = await generatedComponent.display({
+            providedAttributes: attributes,
+            providedChildren: renderedChildren,
+        });
+
+        // вычисляем значение аттрибута CSS-классов
+        if (attributes['class']) {
+            $(generatedElement).addClass( attributes['class'] );
+            delete attributes['class'];
+        }
+
+        // вешаем указанные в аттрибутах события или же устанавливаем эти самые аттрибуты
+        // это и для компонента, и для обычного тега
+
+        this.applyAttributesToElement(generatedElement, attributes);
+        resolve(generatedElement);
+
+
+
+
+
+        // Promise.all(this.renderChildren(children)).then(async (renderedChildren: Array<Element>)=>{
+        //     let generatedElement = await generatedComponent.display({
+        //         providedAttributes: attributes,
+        //         providedChildren: renderedChildren,
+        //     });
+        // });
+        //
+        // $.when( le.components.renderChildren( children ) ).done(( renderedChildren: Array<Element> )=>{
+        //
+        //     $.when( generatedComponent.display({
+        //         providedAttributes: attributes,
+        //         providedChildren: renderedChildren,
+        //     }) ).done( ( generatedElement: Element ) => {
+        //
+        //         if ( attributes['class'] ) {
+        //
+        //             $(generatedElement).addClass( attributes['class'] );
+        //
+        //             delete attributes['class'];
+        //         }
+        //
+        //         le.components.applyAttributesToElement( generatedElement, attributes );
+        //         def.resolve( generatedElement );
+        //
+        //     } );
+        //
+        // });
+    }
+
+    private async renderJsxFromString(type: string, attributes: Object|any = {}, children: any[], resolve: Function): Promise<Node> {
+
+        // специальные теги
+
+        if ( type == 'for' ) {
+
+            if ( !('each' in attributes) ) {
+                this.logger.warn('Incorrect "each" attribute in FOREACH statement!');
+                return resolve( new Comment );
+            }
+
+            if ( !('do' in attributes) ) {
+                this.logger.warn('Incorrect "do" attribute in FOREACH statement!');
+                return resolve( new Comment );
+            }
+
+            let list = attributes['each'];
+            let func = attributes['do'];
+            let result: any[] = [];
+
+            let iterator = 1;
+            _.forEach(list,(val,key,arr)=>{
+                result.push( func(val,key,iterator,arr) );
+                iterator++;
+            });
+
+            let rendered = await this.renderJsxArray('component',{},result);
+            return resolve(rendered);
+
+            // this.renderJsxArray('component',{},result).done((rendered)=>{
+            //     resolve( rendered );
+            // });
+
+            // return def.promise();
+
+        } else if ( type == 'if' ) {
+
+            if ( 'pass' in attributes && !attributes['pass'] )
+                return resolve( new Comment );
+
+            else if ( 'not' in attributes && !!attributes['not'] )
+                return resolve( new Comment );
+
+            else if ( !('not' in attributes || 'pass' in attributes) ) {
+
+                this.logger.warn('Incorrect condition in IF statement!');
+                return resolve( new Comment );
+
+            } else if ( 'then' in attributes ) {
+
+                // может быть полезно в тех случаях, когда генерация вложенных компонентов
+                // использует какие-то переменные, которые будут неопределены в случае,
+                // если условие, определенное в pass/not не сработает
+
+                let thenClosure = attributes['then'];
+                if (!_.isFunction(thenClosure)) {
+                    this.logger.warn('Incorrect THEN attribute in IF statement!');
+                    return resolve( new Comment );
+                }
+                let result = thenClosure();
+                this.renderJsxArray('component',{},result).done((rendered)=>{
+                    return resolve( rendered );
+                });
+
+                // return def.promise();
+
+            }
+
+        } else if ( type == 'switch' ) {
+            let testingValue = attributes['var'];
+
+            let strictMode = false;
+            if ( 'strict' in attributes ) {
+                strictMode = !_.includes(['false',false], attributes['strict']);
+            }
+
+            let matchedCase = null;
+            let defaultCase = null;
+
+            for (let i = 0; i < children.length; i++) {
+
+                let caseChild = children[i];
+                if ( !_.isArray(caseChild) ) continue;
+
+                if ( caseChild[0] === 'default' ) {
+                    defaultCase = caseChild;
+                    continue;
+                }
+
+                if ( caseChild[0] != 'case' ) continue;
+                let childAttributes = caseChild[1];
+                if ( !('value' in childAttributes) ) continue;
+                if ( ( !strictMode && testingValue == childAttributes['value'] ) || ( strictMode && testingValue === childAttributes['value'] ) ) {
+                    matchedCase = caseChild;
+                    break;
+                }
+            }
+
+            if (matchedCase) {
+                children = [ matchedCase ];
+            } else if ( defaultCase ) {
+                children = [ defaultCase ];
+            } else {
+                return resolve(new Comment);
+            }
+
+        }
+
+        // если элемент - обычный тег, то привязывать компонент к нему не надо
+        let generatedElement = document.createElement(type);
+        this.applyAttributesToElement( generatedElement, attributes );
+
+        let renderedChildren = await this.renderChildren(children);
+        _.forEach(renderedChildren, (renderedChild: Element) => {
+
+            if (renderedChild instanceof Text)
+                generatedElement.appendChild(renderedChild);
+            else if ( renderedChild instanceof Element ) {
+
+                switch (renderedChild.tagName) {
+
+                    case 'COMPONENT':
+                    case 'FOREACH':
+                    case 'SWITCH':
+                    case 'DEFAULT':
+                    case 'CASE':
+                    case 'IF':
+
+                        // debugger;
+
+                        _.forEach($(renderedChild).contents(),(ifChildNode)=>{
+                            if ( ifChildNode instanceof Node )
+                                generatedElement.appendChild(ifChildNode);
+                            else
+                                $(generatedElement).append(ifChildNode);
+
+                        });
+
+                        break;
+
+                    default:
+                        generatedElement.appendChild(renderedChild);
+                }
+
+            }
+
+            resolve(generatedElement);
+
+        });
+
+    }
+
+    public async renderJsxArray( type: any, config: Object = {}, ...children: Array<any>): Promise<Node|{}> {
 
         // если передан один параметр и он массив, то вытаскиваем параметры
         if ( _.isArray(type) ) {
@@ -143,272 +407,48 @@ export default class Components {
             }
 
             // delete(tempParams);
-            tempParams = undefined;
+            // tempParams = undefined;
 
         }
 
-        let def = $.Deferred();
+        return new Promise<Node>(async (resolve, reject) => {
+
+            if (_.isUndefined(type)) {
+                return resolve(new Comment);
+            }
+
+            if (type instanceof HTMLElement || type instanceof Text) {
+                return resolve(type);
+            }
+
+            let attributes: Object|any = config || {};
+            let generatedElement: HTMLElement;
+
+            if ( _.isString(type) ) {
+                return await this.renderJsxFromString(type, attributes, children, resolve);
+            } else {
+
+                let initParams = {};
+                if ( attributes['config'] ) {
+                    initParams = attributes['config'];
+                    delete attributes['config'];
+                }
+
+                if (!Detect.isVisualComponent(type)) {
+                    return this.renderJsxFromNotVisualComponent(type, attributes, resolve);
+                } else {
+                    return this.renderJsxFromVisualComponent(type, attributes, initParams, resolve);
+                }
+
+            }
+
+
+        });
 
         // TODO: сохранять в generatedElement.meta type, config?
-
-        // так бывает с пустыми массивами
-        if ( _.isUndefined(type) )
-            return def.resolve( new Comment );
-
-        if ( type instanceof HTMLElement)
-            return def.resolve( type );
-
-        if ( type instanceof Text)
-            return def.resolve( type );
-
-        let attributes = config || {};
-        let generatedElement: HTMLElement;
-
-        if ( _.isString(type) ) {
-
-            // специальные теги
-
-            if ( type == 'for' ) {
-
-                if ( !('each' in attributes) ) {
-                    this.logger.warn('Incorrect "each" attribute in FOREACH statement!');
-                    def.resolve( new Comment );
-                }
-
-                if ( !('do' in attributes) ) {
-                    this.logger.warn('Incorrect "do" attribute in FOREACH statement!');
-                    def.resolve( new Comment );
-                }
-
-                let list = attributes['each'];
-                let func = attributes['do'];
-                let result = [];
-
-                let iterator = 1;
-                _.forEach(list,(val,key,arr)=>{
-                    result.push( func(val,key,iterator,arr) );
-                    iterator++;
-                });
-
-                jsx('component',{},result).done((rendered)=>{
-                    def.resolve( rendered );
-                });
-
-                return def.promise();
-
-            } else if ( type == 'if' ) {
-
-                if ( 'pass' in attributes && !attributes['pass'] )
-                    def.resolve( new Comment );
-
-                else if ( 'not' in attributes && !!attributes['not'] )
-                    def.resolve( new Comment );
-
-                else if ( !('not' in attributes || 'pass' in attributes) ) {
-
-                    this.logger.warn('Incorrect condition in IF statement!');
-                    def.resolve( new Comment );
-
-                } else if ( 'then' in attributes ) {
-
-                    // может быть полезно в тех случаях, когда генерация вложенных компонентов
-                    // использует какие-то переменные, которые будут неопределены в случае,
-                    // если условие, определенное в pass/not не сработает
-
-                    let thenClosure = attributes['then'];
-                    if (!_.isFunction(thenClosure)) {
-                        this.logger.warn('Incorrect THEN attribute in IF statement!');
-                        def.resolve( new Comment );
-                    }
-                    let result = thenClosure();
-                    jsx('component',{},result).done((rendered)=>{
-                        def.resolve( rendered );
-                    });
-
-                    return def.promise();
-
-                }
-
-            } else if ( type == 'switch' ) {
-                let testingValue = attributes['var'];
-
-                let strictMode = false;
-                if ( 'strict' in attributes ) {
-                    strictMode = !_.includes(['false',false], attributes['strict']);
-                }
-
-                let matchedCase = null;
-                let defaultCase = null;
-
-                for (let i = 0; i < children.length; i++) {
-
-                    let caseChild = children[i];
-                    if ( !_.isArray(caseChild) ) continue;
-
-                    if ( caseChild[0] === 'default' ) {
-                        defaultCase = caseChild;
-                        continue;
-                    }
-
-                    if ( caseChild[0] != 'case' ) continue;
-                    let childAttributes = caseChild[1];
-                    if ( !('value' in childAttributes) ) continue;
-                    if ( ( !strictMode && testingValue == childAttributes['value'] ) || ( strictMode && testingValue === childAttributes['value'] ) ) {
-                        matchedCase = caseChild;
-                        break;
-                    }
-                }
-
-                if ( matchedCase ) {
-                    children = [ matchedCase ];
-                } else if ( defaultCase ) {
-                    children = [ defaultCase ];
-                } else {
-                    def.resolve( new Comment );
-                }
-
-            }
-
-            // если элемент - обычный тег, то привязывать компонент к нему не надо
-            generatedElement = document.createElement(type);
-            le.components.applyAttributesToElement( generatedElement, attributes );
-
-            $.when( le.components.renderChildren( children ) ).done(( renderedChildren: Array<Element> )=>{
-
-                _.forEach(renderedChildren,renderedChild => {
-
-                    if ( renderedChild instanceof Text)
-                        generatedElement.appendChild(renderedChild);
-                    else if ( renderedChild instanceof Element ) {
-
-                        switch (renderedChild.tagName) {
-
-                            case 'COMPONENT':
-                            case 'FOREACH':
-                            case 'SWITCH':
-                            case 'DEFAULT':
-                            case 'CASE':
-                            case 'IF':
-
-                                // debugger;
-
-                                _.forEach($(renderedChild).contents(),(ifChildNode)=>{
-                                    if ( ifChildNode instanceof Node )
-                                        generatedElement.appendChild(ifChildNode);
-                                    else
-                                        $(generatedElement).append(ifChildNode);
-
-                                });
-
-                                break;
-
-                            default:
-                                generatedElement.appendChild(renderedChild);
-                        }
-
-                    }
-
-                });
-
-                def.resolve( generatedElement );
-
-            });
-
-        } else {
-
-            // берем из атрибута config аргументы конструктора
-            let initParams = {};
-            if ( attributes['config'] ) {
-                initParams = attributes['config'];
-                delete attributes['config'];
-            }
-
-            // в простом случае у нас не визуальный компонент, а функция. Причем она может возвращать JSX.
-            if ( !Detect.isVisualComponent(type) ) {
-
-                $.when( le.components.renderChildren( children ) ).done(( renderedChildren: Array<Element> )=>{
-
-                    $.when( type({
-                        providedAttributes: attributes,
-                        providedChildren: renderedChildren,
-                        // }) ).done( ( generatedElement: Element ) => {
-                    }) ).done( ( result ) => {
-
-                        if ( _.isArray(result) ) {
-                            // $.when(this.renderJsxArray(result)).done(rendered => {
-                            $.when(jsx(result)).done(rendered => {
-                                // debugger;
-                                // вычисляем значение аттрибута CSS-классов
-                                if ( attributes['class'] ) {
-                                    $(rendered).addClass( attributes['class'] );
-                                    delete attributes['class'];
-                                }
-
-                                // вешаем указанные в аттрибутах события или же устанавливаем эти самые аттрибуты
-                                // это и для компонента, и для обычного тега
-
-                                le.components.applyAttributesToElement( rendered, attributes );
-                                def.resolve( rendered );
-                            });
-                        } else if ( _.isString(result) ) {
-                            def.resolve( $(result).get(0) );
-                        }
-
-                        // def.resolve( generatedElement );
-
-                    } );
-
-                });
-
-            } else { // иначе считаем что это компонент (или его конструктор)
-
-                let generatedComponent: VisualComponent;
-
-                if (typeof type === 'function') {
-                    generatedComponent = new type(initParams);
-                } else if ( _.isObject(type) && type instanceof VisualComponent ) {
-
-                    // если элемент - уже существующий визуальный компонент
-                    generatedComponent = type;
-
-                }
-
-                expect( generatedComponent instanceof VisualComponent, Detect.className(type)+' poor VisualComponent generator/instance!' );
-
-                $.when( le.components.renderChildren( children ) ).done(( renderedChildren: Array<Element> )=>{
-
-                    $.when( generatedComponent.display({
-                        providedAttributes: attributes,
-                        providedChildren: renderedChildren,
-                    }) ).done( ( generatedElement: Element ) => {
-
-                        // вычисляем значение аттрибута CSS-классов
-                        if ( attributes['class'] ) {
-
-                            $(generatedElement).addClass( attributes['class'] );
-
-                            delete attributes['class'];
-                        }
-
-                        // вешаем указанные в аттрибутах события или же устанавливаем эти самые аттрибуты
-                        // это и для компонента, и для обычного тега
-
-                        le.components.applyAttributesToElement( generatedElement, attributes );
-                        def.resolve( generatedElement );
-
-                    } );
-
-                });
-
-            }
-
-        }
-
-        return def.promise();
-
     }
 
-    applyAttributesToElement( element: Element, attributes: Object ): void {
+    private applyAttributesToElement( element: Element, attributes: Object ): void {
 
         _.forEach( attributes, ( value, attribute: string ) => {
 

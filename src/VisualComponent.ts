@@ -11,6 +11,7 @@ export default abstract class VisualComponent {
         config?: Object;
     };
 
+
     /**
      * if true, then no DIV.VisualComponent wrapper generated, used for form fields generating
      * @type {boolean}
@@ -158,7 +159,7 @@ export default abstract class VisualComponent {
      * @param element
      * @returns {this}
      */
-    public installAppending( element: Element ): JQueryPromise<VisualComponent> {
+    public installAppending( element: Element ): Promise<VisualComponent> {
 
         let def = $.Deferred();
 
@@ -166,7 +167,7 @@ export default abstract class VisualComponent {
             def.resolve( this );
         } );
 
-        return <JQueryPromise<VisualComponent>> def.promise();
+        return <Promise<VisualComponent>> def.promise();
 
     }
 
@@ -175,7 +176,7 @@ export default abstract class VisualComponent {
      * @param element
      * @returns {this}
      */
-    public installInstead( element: Element ): JQueryPromise<VisualComponent> {
+    public installInstead( element: Element ): Promise<VisualComponent> {
 
         let def = $.Deferred();
 
@@ -183,7 +184,7 @@ export default abstract class VisualComponent {
             def.resolve( this );
         } );
 
-        return <JQueryPromise<VisualComponent>> def.promise();
+        return <Promise<VisualComponent>> def.promise();
 
     }
 
@@ -229,7 +230,7 @@ export default abstract class VisualComponent {
         return this;
     }
 
-    protected interact( component: VisualComponent, title: string = '' ): JQueryPromise<any> {
+    protected interact( component: VisualComponent, title: string = '' ): Promise<any> {
         let process = $.Deferred();
         this.openModal({
             title: title,
@@ -629,7 +630,7 @@ export default abstract class VisualComponent {
 
     }
 
-    public displaySimple( options: Object = {} ): JQueryPromise<Element> {
+    public displaySimple( options: Object = {} ): Promise<Element> {
 
         this.logger.notice('displaying simple...');
 
@@ -675,14 +676,14 @@ export default abstract class VisualComponent {
 
         });
 
-        return <JQueryPromise<Element>> dfd.promise();
+        return <Promise<Element>> dfd.promise();
 
     }
 
     /**
      * Deferred-Полифил для разных способов рендеринга визуального компонента
      */
-    public display( options: Object = {} ): JQueryPromise<Element> {
+    public async display( options: Object = {} ): Promise<Element> {
 
         if ( this.isSimple )
             return this.displaySimple(options);
@@ -750,7 +751,7 @@ export default abstract class VisualComponent {
 
         });
 
-        return <JQueryPromise<Element>> dfd.promise();
+        return <Promise<Element>> dfd.promise();
 
         /**
          * Что может происходить?
@@ -774,15 +775,15 @@ export default abstract class VisualComponent {
         return;
     }
 
-    public render( options ): JQueryPromise<any>|string {
+    public render( options ): Promise<any>|string {
         return this.renderViaBackend();
     }
 
     /**
      * Shortcut для доступа к элементу компонента, обернутому в JQuery
-     * @returns {JQuery}
+     * @returns JQuery
      */
-    $element(): JQuery {
+    $element(): JQuery<Element> {
         return $( this._element );
     }
 
@@ -847,7 +848,7 @@ export default abstract class VisualComponent {
      * @param name
      * @param data
      */
-    protected signal( name, data: Object = {} ): boolean {
+    protected signal(name: string, data: Object = {}): boolean {
 
         let signal = new Signal();
         signal.name = name;
@@ -979,7 +980,7 @@ export default abstract class VisualComponent {
      * @returns {boolean}
      */
     protected eventNotInternal( e: Event ): boolean {
-        return this.isEventInternal(e) == false;
+        return !this.isEventInternal(e);
     }
 
     /**
@@ -1055,7 +1056,7 @@ export default abstract class VisualComponent {
      * @param options
      */
     public executeCommand( command: string, params: Object = {},
-                           options: backendCommandSpecOptions = {} ): JQueryPromise<any> {
+                           options: backendCommandSpecOptions = {} ): Promise<any> {
 
         return le.ware.componentBackendCommand(this,command,params,options);
 
@@ -1089,32 +1090,26 @@ export default abstract class VisualComponent {
      * TODO: это же просто проксирует renderByBackendStaticAsynchronous?.. А зачем?
      * @param layoutName
      * @param parameters
-     * @returns {JQueryPromise<T>}
+     * @returns {Promise<T>}
      */
-    protected renderViaBackend( layoutName = 'default', parameters: Object = {} ): JQueryPromise<any> {
+    protected renderViaBackend(layoutName = 'default', parameters: Object = {}): Promise<any> {
 
-        let process = $.Deferred();
+        return new Promise<string>(async (resolve, reject) => {
+            let result: string = await this.renderByBackendStaticAsynchronous( layoutName, parameters )
+            resolve(result);
+        });
+
 
         // todo: как бы брать параметры автоматом?
-
-        this.renderByBackendStaticAsynchronous( layoutName, parameters )
-            .always( ( result: string ) => {
-                process.resolve( result );
-            } );
-
-        return process.promise();
     }
 
     /**
      * TODO: Отправляем запрос на сервер, чтобы получить отрендеренный компонент
      * @returns {string}
      */
-    protected renderByBackendStaticAsynchronous(layout: string = VisualComponent.LAYOUT_DEFAULT, parameters: Object = {} ): JQueryPromise<string> {
-
-        let process = $.Deferred();
+    protected renderByBackendStaticAsynchronous(layout: string = VisualComponent.LAYOUT_DEFAULT, parameters: Object = {} ): Promise<string> {
 
         this.logger.log('Rendering layout '+layout+' of component '+this.debugName()+' by backend...');
-        // debugger;
 
         let data = {
 
@@ -1130,6 +1125,17 @@ export default abstract class VisualComponent {
             createPersistant: false, // создавать бэкенд на время сессии или одноразово?
 
         };
+
+        return new Promise<string>(async (resolve, reject) => {
+
+        });
+
+        // let process = $.Deferred();
+
+
+        // debugger;
+
+
 
         le.backend.wareRequest( 'LE_COMPONENT_RENDER_LAYOUT', data )
             .done( ( result: OperationResult ) => {
@@ -1152,7 +1158,7 @@ export default abstract class VisualComponent {
 
         // TODO: передаваемые параметры - они для конструирования компонента или для передачи в layout???
 
-        return <JQueryPromise<string>> process.promise();
+        return <Promise<string>> process.promise();
 
     }
 

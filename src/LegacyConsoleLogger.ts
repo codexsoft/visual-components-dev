@@ -126,7 +126,7 @@ export default class LegacyConsoleLogger implements LoggerInterface
         // this.on ? console.warn(message) : null;
     }
 
-    public error( message ): void {
+    public error( message: string ): void {
 
         this.counter++;
 
@@ -140,24 +140,24 @@ export default class LegacyConsoleLogger implements LoggerInterface
         !this.LE_LOG_CONSOLE_DARK && console.log('%c'+message,'background-color: #F7EAE6; color: #940000;');
     }
 
-    public timenotice( message ): void {
+    public timenotice( message: string ): void {
         this.notice( this.stamp(message) );
     }
 
-    public timeminor( message ): void {
+    public timeminor( message: string ): void {
         this.minor( this.stamp(message) );
     }
 
-    public timeinfo( message ): void {
+    public timeinfo( message: string ): void {
         this.info( this.stamp(message) );
     }
 
-    public timewarn( message ): void {
+    public timewarn( message: string ): void {
         this.settings.on ? this.warn( this.logtime() + ': ' + message) : null;
         // this.on ? this.warn( this.logtime() + ': ' + message) : null;
     }
 
-    public timeerror( message ): void {
+    public timeerror( message: string ): void {
 
         this.error( this.stamp(message) );
 
@@ -174,12 +174,12 @@ export default class LegacyConsoleLogger implements LoggerInterface
         //LE.console.on ? console.error( logtime() + ': ' + message) : null;
     }
 
-    private stamp( message ): void {
+    private stamp( message: string ): void|string {
         if ( !this.complex(message) ) message = this.logtime()+': '+message;
         return message;
     }
 
-    public group( message, collapsed: boolean = true ): void {
+    public group( message: string, collapsed: boolean = true ): void {
 
         this.counter++;
 
@@ -206,7 +206,7 @@ export default class LegacyConsoleLogger implements LoggerInterface
         // this.LE_LOG_CONSOLE_CLEAR && console.clear();
     }
 
-    public minor( message ) {
+    public minor( message: string ) {
 
         this.counter++;
 

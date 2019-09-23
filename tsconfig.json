@@ -1,0 +1,36 @@
+{
+  "compilerOptions": {
+    "module": "es6",
+//    "module": "commonjs",
+//    "module": "amd",
+//    "module": "es2015",
+//    "module": "esnext",
+//    "module": "none", // won't work: Cannot use imports, exports, or module augmentations when '--module' is 'none'.
+//    "module": "system", // won't work: System.register is not supported by webpack.
+//    "module": "umd",  // won't work: Critical dependency: require function is used in a way in which dependencies cannot be statically extracted
+//    "target": "es3",
+    "target": "es5", // es3|es5|es6|esnext|es2015|es2016|es2017|es2018|es2019|es2020
+
+//    "noImplicitAny": true,
+//    "removeComments": true,
+    "preserveConstEnums": true,
+//    "outFile": "dist/app.js",
+    "sourceMap": false,
+    "strict": true,
+    "lib": [
+          "dom",
+      //    "es5",
+//          "es2015.promise"
+          "es2015"
+      //    "es6"
+//     "es2015.promise"
+    ]
+  },
+  "include": [
+//    "**/*"
+    "./src/**/*"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

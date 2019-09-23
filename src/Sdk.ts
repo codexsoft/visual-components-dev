@@ -35,9 +35,9 @@ export class Sdk {
      * @param type
      * @param data
      * @param options
-     * @returns {JQueryPromise<T>}
+     * @returns {Promise<T>}
      */
-    public wareRequest( type: string|null, data: Object, options: OperationOptions = {} ): JQueryPromise<any> {
+    public wareRequest( type: string|null, data: Object, options: OperationOptions = {} ): Promise<any> {
 
         // let url = options.url || le.config.pathAjaxDefault;
 
