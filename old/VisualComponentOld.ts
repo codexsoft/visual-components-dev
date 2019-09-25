@@ -14,6 +14,10 @@ import JsxArray from "./JsxArray";
 import VisualComponentDisplayOptionsInterface from "./VisualComponentDisplayOptionsInterface";
 import expect from "./shortcut-functions/expect";
 import VisualComponent from "./VisualComponent";
+import ModalComponentInterface from "./ModalComponentInterface";
+import OpenModalOptionsInterface from "./OpenModalOptionsInterface";
+import Common__Modal__Blurred from "./components/Common__Modal__Blurred";
+import Common__Dialog__Confirm from "./components/Common__Dialog__Confirm";
 
 /**
  * @deprecated
@@ -324,6 +328,64 @@ export default abstract class VisualComponentOld {
             .setParentComponent(this)
             .setComponent( subComponent )
             .fire( signalHandlers );
+
+    }
+
+    /**
+     * Открыть модальное окно, назначив родительским этот компонент
+     * @param options
+     */
+    protected openModal(options: OpenModalOptionsInterface): ModalComponentInterface {
+
+        // debugger;
+        let modalComponent = options.modalComponent || new Common__Modal__Blurred;
+
+        if (typeof options.title !== "undefined" && typeof modalComponent.setTitle !== "undefined") {
+            modalComponent['setTitle'](options.title);
+        }
+
+        let subComponent = options.content;
+        let signalHandlers = options.signals || {};
+        let signalTerminators: {} = options.terminators || {};
+
+        let handlers = _.merge(signalHandlers, signalTerminators);
+
+        modalComponent
+            .setParentComponent(this)
+            .setComponent( subComponent )
+            .fire(handlers, <[]>_.keys(signalTerminators));
+
+        return modalComponent;
+
+    }
+
+    /**
+     * TODO: Подобные вещи подключаемыми делать следует!.. Но как это в TS делается?
+     * todo: возможно, класс компонента-подтверждения следует сделать настраиваемым
+     * @param text
+     * @param handlers
+     */
+    protected confirm( text: string, handlers: Object|any) {
+
+        // if ( typeof window.Common__Dialog__Confirm === 'undefined' ) {
+        //     this.logger.error('Common__Dialog__Confirm VisualComponent not found!!!');
+        //     return;
+        // }
+
+        this.openModal({
+
+            title: 'Требуется подтверждение',
+
+            content: (new Common__Dialog__Confirm)
+                .setDefault(false)
+                .setText(text),
+
+            terminators: {
+                yes: ( s: Signal ) => handlers.yes ? handlers.yes : () => {},
+                no: ( s: Signal ) => handlers.no ? handlers.no : () => {},
+            }
+
+        });
 
     }
 

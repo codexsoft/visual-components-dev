@@ -108,8 +108,8 @@ export default class Components {
      * @param element
      * @param model
      */
-    public static tie( element: Element, model: VisualComponent ): void {
-        model.setElement( element );
+    public static tie(element: HTMLElement, model: VisualComponent): void {
+        model.setElement(element);
         element.model = model;
     }
 
@@ -127,7 +127,8 @@ export default class Components {
         this.dispatcher = new ComponentsEventDispatcher();
 
         if (window.keypress) {
-            this.keyboard = new Keyboard(new window.keypress.Listener);
+            // @ts-ignore
+            this.keyboard = new Keyboard(new window.keypress.Listener(document.getElementsByTagName('body').item(0)));
 
             /*
             this.keyboard.registerCombos( 0, {
@@ -184,9 +185,9 @@ export default class Components {
         return Components.backendUrl(component)+'images/'+image;
     }
 
-    protected url(): string {
-        return Components.settings.urlToRoot + this.selfUrl;
+    // protected url(): string {
+    //     return Components.settings.urlToRoot + this.selfUrl;
         // protected selfUrl: string = '';
-    }
+    // }
 
 }

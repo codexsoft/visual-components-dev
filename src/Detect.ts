@@ -43,6 +43,7 @@ export default class Detect {
      * @returns {boolean}
      */
     static classExists( className: string ) {
+        // @ts-ignore
         return ( window[className] != undefined && window[className] != 'undefined' && window[className] != false );
     }
 

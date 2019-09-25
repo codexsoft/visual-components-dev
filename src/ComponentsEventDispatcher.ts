@@ -1,6 +1,6 @@
 export default class ComponentsEventDispatcher {
 
-    public dispatch(event, options) {
+    public dispatch(event: string, options: {}) {
 
     }
 

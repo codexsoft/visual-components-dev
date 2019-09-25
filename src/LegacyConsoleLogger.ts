@@ -1,4 +1,5 @@
 import LoggerInterface from "./LoggerInterface";
+import * as _ from "lodash";
 
 export default class LegacyConsoleLogger implements LoggerInterface
 {
@@ -33,11 +34,13 @@ export default class LegacyConsoleLogger implements LoggerInterface
 
     private logtime(): string {
         this.counter++;
-        return (le.request.time_spent()/1000).toFixed(3);
+        return 'TIMELOG';
+        // return (le.request.time_spent()/1000).toFixed(3);
     }
 
+    // noinspection JSMethodCanBeStatic
     private complex(message: any){
-        return ( _.isObject(message) || _.isArray(message) );
+        return (_.isObject(message) || _.isArray(message));
     }
 
     // private on = liquidConfig.config.CONSOLE_LOGGING;
@@ -145,7 +148,7 @@ export default class LegacyConsoleLogger implements LoggerInterface
     }
 
     public timeminor( message: string ): void {
-        this.minor( this.stamp(message) );
+        this.minor(this.stamp(message));
     }
 
     public timeinfo( message: string ): void {
@@ -174,8 +177,10 @@ export default class LegacyConsoleLogger implements LoggerInterface
         //LE.console.on ? console.error( logtime() + ': ' + message) : null;
     }
 
-    private stamp( message: string ): void|string {
-        if ( !this.complex(message) ) message = this.logtime()+': '+message;
+    private stamp(message: string): string {
+        if (!this.complex(message)) {
+            message = this.logtime()+': '+message
+        }
         return message;
     }
 
