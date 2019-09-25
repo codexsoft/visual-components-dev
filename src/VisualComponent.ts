@@ -13,8 +13,12 @@ import Detect from "./Detect";
 import JsxArray from "./JsxArray";
 import VisualComponentDisplayOptionsInterface from "./VisualComponentDisplayOptionsInterface";
 import expect from "./shortcut-functions/expect";
+import {use} from "./../node_modules/typescript-mix/dist/index";
 
 export default abstract class VisualComponent {
+
+    // public static readonly class: string = __CLASS__;
+    // private readonly class: string = __CLASS__;
 
     [key: string]: any;
 
@@ -28,7 +32,7 @@ export default abstract class VisualComponent {
      * if true, then no DIV.VisualComponent wrapper generated, used for form fields generating
      * @type {boolean}
      */
-    protected isSimple: boolean = false;
+    protected displayWithoutContainer: boolean = false;
 
     static LAYOUT_DEFAULT = 'default';
     protected _path: string;
@@ -387,16 +391,21 @@ export default abstract class VisualComponent {
     }
 
     protected getClass(): string {
-
-        if ( !this.__cachedDetectedClassname )
+        // __CLASS__ from typescript-magic-variable-plugin can be used instead
+        if (!this.__cachedDetectedClassname) {
             this.__cachedDetectedClassname = Detect.className(this);
+        }
 
         return this.__cachedDetectedClassname;
     }
 
-    public getClassPublic(): string {
+    public class(): string {
         return this.getClass();
     }
+
+    // public static class(): string {
+    //     return __CLASS__;
+    // }
 
     protected getCssClass(): string {
         return this.getClass();
@@ -413,7 +422,7 @@ export default abstract class VisualComponent {
      * @returns {string}
      */
     protected backendUrl() {
-        return le.ware.settings.urlToRoot+'src/components/'+this.getClass()+'/';
+        return Components.settings.urlToRoot+'src/components/'+this.getClass()+'/';
     }
 
     protected cssUrl(fileName: string): string {
@@ -438,12 +447,14 @@ export default abstract class VisualComponent {
         }
 
         let eventHandlers = this.listenEvents();
-        if ( _.isEmpty( eventHandlers ) ) return;
+        if (_.isEmpty( eventHandlers)) {
+            return;
+        }
 
-        $.each( eventHandlers, ( eventName, handler ) => {
+        $.each( eventHandlers, (eventName: string, handler: Function) => {
             this.logger.minor( '[ BIND EVENTS ] Регистрация обработчика события: ' + eventName );
             this.$element().off(eventName); // снимаем существующий обработчик, если был
-            this.$element().on( eventName, handler );
+            this.$element().on(eventName, handler);
         } );
 
     }
@@ -453,25 +464,40 @@ export default abstract class VisualComponent {
      * сообщений, сигналов и клавиатурных сочетаний. Кроме того, выполняется пользовательский
      * произвольный код по активации компонента.
      */
-    public __start() {
+    public async __start() {
+        Components.dispatcher.dispatch('visualComponent.started', {});
         this.__startListenEvents();
         this.logger.minor('Активация компонента '+this.debugName());
-        Components.keyboard.registerCombos( this.id, this.listenKeyboard() );
-        this.activate(); // TODO: сделать на promise-ах
+        Components.keyboard.registerCombos(this.id, this.listenKeyboard());
+
+        // executing custom activation code
+        await this.activateAsync();
+        this.activate();
     }
 
     /**
      * Останов этого конкретного компонента
      * @private
      */
-    public __stop() {
+    public async __stop() {
         this.logger.minor('Деактивация компонента '+this.debugName());
+
+        Components.stopComponentsInNode(this.element());
         // todo: fire event, keyboard must be pluggable!
         Components.keyboard.unregisterCombosForComponent(this.id);
+
+        this.killViewport();
+
+        // executing custom deactivation code
+        await this.deactivateAsync();
         this.deactivate();
     }
 
     protected deactivate() {
+    }
+
+    protected async deactivateAsync(): Promise<void> {
+        return new Promise(async (resolve: Function) => { resolve(); });
     }
 
     /**
@@ -487,7 +513,11 @@ export default abstract class VisualComponent {
      * In the event a Deferred was resolved with no value, the corresponding doneCallback argument
      * will be undefined.
      */
-    protected activate() {
+    protected async activateAsync(): Promise<void> {
+        return new Promise(async (resolve: Function) => { resolve(); });
+    }
+
+    protected activate(): void {
     }
 
     /**
@@ -595,42 +625,112 @@ export default abstract class VisualComponent {
         this.$element().mountComponent(this);
     }
 
-    public createContainer(): HTMLElement {
-
+    public createContainerElement(): HTMLElement {
         let $container = $('<div>');
         this.getAncestors().forEach(function (ancestorClass: string) {
             $container.addClass(ancestorClass);
-        } );
-
-        // if ( this['rtid'] ) {
-        //     $container.attr('id',this['rtid']);
-        // }
+        });
 
         return $container.get(0);
-
     }
 
-    public async displaySimple(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element> {
-
-        this.logger.notice('displaying simple...');
-        // this._jsxProvidedChildren = options.providedChildren || [];
-        // this.props = this._jsxProvidedAttributes = options.providedAttributes || {};
-
+    public async displayUniversal(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element> {
         this.importDisplayVars(options);
         let beforeRenderResult: any = await this.beforeRender();
         let content: any = await this.render(beforeRenderResult);
 
-        return new Promise((resolve: Function, reject: Function) => {
+        return new Promise<Element>(async (resolve: Function, reject: Function) => {
+
+            if ( _.isArray( content ) ) { // JSX array-based render
+
+                let resultElement: HTMLElement = await (new JsxArray(content)).render();
+
+                if (this.displayWithoutContainer) {
+                    // simple case, used for components like form elements
+                    Components.tie(resultElement, this);
+                } else {
+
+                    let container = this.createContainerElement();
+
+                    // we must unwrap elements, if they are in container <COMPONENT> (JSX must be just ONE element!)
+                    if ( _.includes(['COMPONENT'], resultElement.tagName) && $(resultElement).contents().length) {
+                        // может быть аттрибуты DIV копировать?..
+
+                        // we must also unwrap child COMPONENT element
+                        let contents = $(resultElement).contents();
+                        if (contents.length === 1) {
+                            let firstElement: {
+                                tagName?: string
+                            } = contents.first().get(0);
+                            if (firstElement.tagName !== undefined && firstElement.tagName == 'COMPONENT') {
+                                resultElement = firstElement;
+                            }
+                        }
+
+                        $(resultElement).contents().each( function() {
+                            $(container).append(this);
+                        } );
+
+                    } else {
+                        $(container).append(resultElement);
+                    }
+
+                    Components.tie( container, this );
+                    await this.__start(); // опции?
+
+                    resolve( container );
+
+                }
+
+                return;
+            }
+
+            if ( _.isElement( content ) ) {
+
+                // вообще это редкий случай. такое возможно, если render сделан как JSX, который не массив возвращает
+                this.logger.notice('not implemented!');
+                resolve(new Comment);
+
+            } else if ( _.isString( content ) ) {
+
+                // это может быть backend-рендеринг или шаблонный JST-рендер
+                // string содержит только внутренний контент
+                // что если у компонента уже есть отрисованный контейнер? Все равно новый создаем?..
+
+                let container = this.createContainerElement();
+                $(container).html(content);
+
+                Components.tie(container, this);
+                await this.__start(); // опции?
+
+                resolve( container );
+            }
+        });
+    }
+
+    /**
+     * todo: should be implemented in a single method display...
+     * @param options
+     */
+    public async displaySimple(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element> {
+
+        this.logger.notice('displaying simple...');
+        this.importDisplayVars(options);
+        let beforeRenderResult: any = await this.beforeRender();
+        let content: any = await this.render(beforeRenderResult);
+
+        return new Promise(async (resolve: Function, reject: Function) => {
 
             if (_.isElement(content)) {
 
                 // вообще это редкий случай. такое возможно, если render сделан как JSX, который не массив возвращает
                 this.logger.notice('not implemented!');
+                resolve(new Comment);
 
             } else if (_.isArray(content)) { // JSX array-based render
 
                 let resultElement: Element = await (new JsxArray(content)).render();
-                Components.tie( resultElement, this );
+                Components.tie(resultElement, this);
                 this.activate();
                 resolve(resultElement);
 
@@ -658,7 +758,7 @@ export default abstract class VisualComponent {
      */
     public async display(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element> {
 
-        if ( this.isSimple ) {
+        if ( this.displayWithoutContainer ) {
             return this.displaySimple(options);
         }
 
@@ -666,7 +766,7 @@ export default abstract class VisualComponent {
         let beforeRenderResult: any = await this.beforeRender();
         let content: any = await this.render(beforeRenderResult);
 
-        return new Promise((resolve: Function, reject: Function) => {
+        return new Promise<Element>(async (resolve: Function, reject: Function) => {
             if ( _.isElement( content ) ) {
 
                 // вообще это редкий случай. такое возможно, если render сделан как JSX, который не массив возвращает
@@ -675,13 +775,15 @@ export default abstract class VisualComponent {
             } else if ( _.isArray( content ) ) { // JSX array-based render
 
                 let resultElement: Element = await (new JsxArray(content)).render();
-                let container = this.createContainer();
+                let container = this.createContainerElement();
                 if ( _.includes(['COMPONENT'], resultElement.tagName) && $(resultElement).contents().length) {
                     // может быть аттрибуты DIV копировать?..
 
                     let contents = $(resultElement).contents();
                     if (contents.length == 1) {
-                        let firstElement = contents.first().get(0);
+                        let firstElement: {
+                            tagName?: string
+                        } = contents.first().get(0);
                         if (firstElement.tagName !== undefined && firstElement.tagName == 'COMPONENT') {
                             resultElement = firstElement;
                         }
@@ -699,7 +801,7 @@ export default abstract class VisualComponent {
                 }
 
                 Components.tie( container, this );
-                this.__start(); // опции?
+                await this.__start(); // опции?
 
                 resolve( container );
 
@@ -709,11 +811,11 @@ export default abstract class VisualComponent {
                 // string содержит только внутренний контент
                 // что если у компонента уже есть отрисованный контейнер? Все равно новый создаем?..
 
-                let container = this.createContainer();
-                $(container).html( content );
+                let container = this.createContainerElement();
+                $(container).html(content);
 
                 Components.tie(container, this);
-                this.__start(); // опции?
+                await this.__start(); // опции?
 
                 resolve( container );
             }
@@ -738,11 +840,12 @@ export default abstract class VisualComponent {
      * todo: should be protected, but currently used by $.assignComponentToPrerendered
      * @returns {boolean}
      */
-    public beforeRender() {
+    public beforeRender(): any {
         return;
     }
 
-    public render(): Promise<any>|string {
+    public render(params?: {[index: string]: any}): Promise<any>|string {
+        // by default, rendering via backend...
         return this.renderViaBackend();
     }
 
@@ -772,32 +875,11 @@ export default abstract class VisualComponent {
      * Shortcut для доступа к элементу компонента (возвращает как HTMLElement)
      * @returns {HTMLElement}
      */
-    htmlelement(): HTMLElement {
+    public htmlElement(): HTMLElement {
         return <HTMLElement>this.element();
     }
 
-    /**
-     * Найти по DOM родительский визуальный компонент
-     * Либо вернет себя же, если найти не удалось
-     *
-     * TODO: вообще, концептуально, дочерние элементы не должны бы обращаться к родительским таким образом
-     * то есть пользователю бы не нужно иметь доступ к этому методу
-     *
-     * @final
-     * @deprecated
-     */
-    protected __up(): VisualComponent|null {
-
-        let $self = this.$element();
-
-        let $parentComponent = $self.parent().closest( '.VisualComponent' );
-        return $parentComponent.length ? $parentComponent.get(0).model : null;
-
-        // TODO: $parentComponent.model() ?
-
-    }
-
-    public findParentComponent(): VisualComponent {
+    public findParentComponent(): VisualComponent|null {
 
         let $self = this.$element();
 
@@ -810,47 +892,6 @@ export default abstract class VisualComponent {
         return this.getClass() + '('+this.id+')';
     }
 
-    public signalPublic( name, data: Object = {} ): boolean {
-        return this.signal( name, data );
-    }
-
-    /**
-     * Сгенерировать сигнал
-     * TODO: может сделать третий параметр callback - чтобы вызывать его
-     * когда сигнал будет обработан?
-     * @param name
-     * @param data
-     */
-    protected signal(name: string, data: Object = {}): boolean {
-
-        let signal = new Signal(name, this);
-        signal.data = data;
-        this.logger.log( 'Signal "' + name + '" '+JSON.stringify(data)+' fired in '+this.debugName()+'!' );
-
-        this._signalHandle( signal );
-
-        // для удобства в использовании при конвертации события в сигнал и прекращения обработки события
-        return false;
-
-    }
-
-    /**
-     * Бросить сигнал вверх для дальнейшей обработки родительскими компонентами
-     * Может быть использован для того, чтобы выполнить какие-то действия перед проксированием
-     * @param signal
-     */
-    protected signalProxy( signal: Signal ): void {
-        this._signalBubble(signal);
-    }
-
-    /**
-     * Сигналы, которые умеет обрабатывать компонент
-     * @public
-     */
-    protected listenSignals(): {[index: string]: Function} {
-        return {};
-    };
-
     /**
      * События, которые компонент умеет обрабатывать
      * Если событие не должно всплывать наверх, в обработчике нужно вернуть false
@@ -860,7 +901,6 @@ export default abstract class VisualComponent {
      * if ( this.eventNotInternal(e ) ) return;
      *
      * Можно терминировать события, произошедшие в дочерних компонентах (опционально, по умолчанию отключено)
-     *
      */
     protected listenEvents() {
         return {};
@@ -869,11 +909,11 @@ export default abstract class VisualComponent {
     /**
      * Отправить сигнал на обработку вышестоящим визуальным компонентам
      */
-    _signalBubble( signal: Signal ) {
+    public _signalBubble( signal: Signal ) {
 
         this.logger.minor( 'Всплытие сигнала вверх...' );
 
-        let parentModel = this.__up();
+        let parentModel = Components.findParentComponent(this);
 
         try {
             expect(parentModel, 'Родительский компонент не обнаружен!');
@@ -885,165 +925,6 @@ export default abstract class VisualComponent {
         if (parentModel instanceof VisualComponent) {
             parentModel._signalHandle( signal );
         }
-    }
-
-    /**
-     * Вычислить путь, пройденный событием до этого компонента,
-     * при этом выбирая только визуальные компоненты
-     * @param e
-     * @returns {Array}
-     * @deprecated should be moved away from VisualComponent
-     */
-    protected getEventPathComponents(e: Event) {
-
-        // TODO: можно путь взять отсюда: window.testEvent.path
-        // TODO: можно не элементы, а модели в путь включать
-
-        let path = [];
-        let $current = $( <Element>e.target );
-        let $parent;
-
-        do {
-
-            if ( $current.hasClass('VisualComponent') )
-                $current = $current.parent();
-
-            $parent = $current.closest('.VisualComponent');
-
-            if ( $parent.length )
-                path.push( $parent.get(0) );
-
-            $current = $parent;
-
-        } while ( $parent.length && $parent.get(0) !== this.element());
-        // } while ( $parent.length && $parent.get(0) !== this.element() && $parent.get(0) !== document );
-
-        return path;
-
-    }
-
-    /**
-     * Вычислить путь, пройденный событием до этого компонента
-     * @param e
-     * @returns {Array}
-     * @deprecated should be moved away from VisualComponent
-     */
-    protected getEventPath( e: Event ): Array<Element> {
-
-        // TODO: можно путь взять отсюда: window.testEvent.path
-
-        let $current = $( <Element>e.target );
-        let $parent;
-        let path = [];
-
-        do {
-            $parent = $current.parent();
-            if ( $parent.length )
-                path.push( $parent.get(0) );
-            $current = $parent;
-        } while ( $parent.length && $parent.get(0) !== this.element());
-        // } while ( $parent.length && $parent.get(0) !== this.element() && $parent.get(0) !== document );
-
-        return path;
-    }
-
-    /**
-     * Определяет, что событие возникло в другом компоненте
-     * @param e
-     * @returns {boolean}
-     * @deprecated should be moved away from VisualComponent
-     */
-    protected eventNotInternal( e: Event ): boolean {
-        return !this.isEventInternal(e);
-    }
-
-    /**
-     * Определяет, возникло ли событие непосредственно внутри этого компонента
-     * @param e
-     * @returns {boolean}
-     * @deprecated should be moved away from VisualComponent
-     */
-    protected isEventInternal( e: Event ): boolean {
-
-        return ( $(<Element>e.target)
-            .closest('.VisualComponent')
-            .get(0) === this.element() );
-    }
-
-    protected customSignalHandler( s: Signal ) {
-        return null;
-    }
-
-    protected _signalHandleHook(signal: Signal) {
-
-    }
-
-    /**
-     * Обработать сигнал
-     */
-    protected _signalHandle( signal: Signal ) {
-
-        signal.trip.push(this);
-        let continueBubbling = true; // bubbling by default!
-        // let handlerMethodName: string = 'on_' + signal.name;
-
-        // if (this[handlerMethodName]) {
-        //
-        //     this.logger.info('Handling signal in component ' + this.debugName() + ' via method ' + handlerMethodName );
-        //     continueBubbling = this[handlerMethodName](signal); // will be undefined by default!
-        //
-        // } else if ( this.listenSignals()[signal.name] ) {
-        if ( this.listenSignals()[signal.name] ) {
-
-            // TODO: call trigger callback?
-            this._signalHandleHook(signal);
-            continueBubbling = this.listenSignals()[signal.name].call( this, signal );
-
-        } else {
-
-            this.logger.minor( 'Handling signal by customSignalHandler in ' + this.debugName() );
-            let customResult = this.customSignalHandler(signal);
-            if (customResult !== null) {
-                continueBubbling = customResult;
-            } else {
-                this.logger.minor( 'Signal handler not set in ' + this.debugName() );
-            }
-        }
-
-        if ( continueBubbling ) {
-            this._signalBubble( signal );
-        }
-        else {
-            this.logger.minor( 'Signal '+signal.name+' bubbling stopped!' );
-        }
-
-    }
-
-    /**
-     * Выполнить команду на стороне бэкенда этого компонента
-     * @WARE!
-     * @param command
-     * @param params
-     * @param options
-     */
-    public executeCommand( command: string, params: Object = {},
-                           options: backendCommandSpecOptions = {} ): Promise<any> {
-
-        return le.ware.componentBackendCommand(this,command,params,options);
-
-    }
-
-    /**
-     * Сообщить бэкенду компонента о произошедшем событии
-     * @WARE!
-     * @param event
-     * @param params
-     */
-    public backendEvent( event, params: Object | boolean = false ): void {
-
-        this.logger.log('backendEvent '+event);
-        le.ware.componentBackendEvent(this,event,params);
-
     }
 
     /**
@@ -1145,34 +1026,92 @@ export default abstract class VisualComponent {
         this.$element().mountComponent(this, {mode: 'replace'});
     }
 
+    protected signalCustomHandler(s: Signal): boolean|null {
+        return null;
+    }
+
+    protected _signalHandleHook(signal: Signal) {
+
+    }
+
+    /**
+     * Обработать сигнал
+     */
+    protected _signalHandle(signal: Signal): void {
+
+        signal.trip.push(this);
+        let continueBubbling = true; // bubbling by default!
+        // let handlerMethodName: string = 'on_' + signal.name;
+
+        // if (this[handlerMethodName]) {
+        //
+        //     this.logger.info('Handling signal in component ' + this.debugName() + ' via method ' + handlerMethodName );
+        //     continueBubbling = this[handlerMethodName](signal); // will be undefined by default!
+        //
+        // } else if ( this.listenSignals()[signal.name] ) {
+        if ( this.listenSignals()[signal.name] ) {
+
+            // TODO: call trigger callback?
+            this._signalHandleHook(signal);
+            continueBubbling = this.listenSignals()[signal.name].call(this, signal);
+
+        } else {
+
+            this.logger.minor( 'Handling signal by customSignalHandler in ' + this.debugName() );
+            let customResult = this.signalCustomHandler(signal);
+            if (customResult !== null) {
+                continueBubbling = customResult;
+            } else {
+                this.logger.minor('Signal handler not set in '+this.debugName());
+            }
+        }
+
+        if ( continueBubbling ) {
+            this._signalBubble( signal );
+        } else {
+            this.logger.minor( 'Signal '+signal.name+' bubbling stopped!' );
+        }
+
+    }
+
+    public signalPublic( name, data: Object = {} ): boolean {
+        return this.signal( name, data );
+    }
+
+    /**
+     * Сгенерировать сигнал
+     * TODO: может сделать третий параметр callback - чтобы вызывать его
+     * когда сигнал будет обработан?
+     * @param name
+     * @param data
+     */
+    protected signal(name: string, data: Object = {}): boolean {
+
+        let signal = new Signal(name, this);
+        signal.data = data;
+        this.logger.log( 'Signal "' + name + '" '+JSON.stringify(data)+' fired in '+this.debugName()+'!' );
+
+        this._signalHandle( signal );
+
+        // для удобства в использовании при конвертации события в сигнал и прекращения обработки события
+        return false;
+    }
+
+    /**
+     * Бросить сигнал вверх для дальнейшей обработки родительскими компонентами
+     * Может быть использован для того, чтобы выполнить какие-то действия перед проксированием
+     * @param signal
+     */
+    protected signalProxy( signal: Signal ): void {
+        this._signalBubble(signal);
+    }
+
+    /**
+     * Сигналы, которые умеет обрабатывать компонент
+     * @public
+     */
+    protected listenSignals(): {[index: string]: Function} {
+        return {};
+    };
+
 }
-
-/**
- * Способы рендеринга компонента
- *
- * В классе компонента рендеринг шаблонов описывается примерно так:
- * layout_default() {
-     *     return this.renderViaBackend( 'default', { accidentId: this.accidentId } );
-     * }
- *
- * Внутри рендеринг можно делать по-разному:
- *
- * Способ 1: Асинхронно запросить рендер у сервера
- * let dfd = $.Deferred();
- * $.when( this.renderByBackendStaticAsynchronous( 'default', { accidentId: this.accidentId }))
- *     .always( ( result ) => dfd.resolve( result ) );
- * return dfd.promise();
- *
- * или короче: return this.renderViaBackend( 'default', { accidentId: this.accidentId } );
- *
- * Способ 2: Запросить у бэкенда рендер контента СИНХРОННО
- * return this.renderByBackendStaticSynchronous( 'default', { accidentId: this.accidentId } );
- *
- * Способ 3: Сразу вернуть результат
- * return this.renderJsTemplate('default'); // сгенерировать, используя JST-шаблон
- * return '<div></div>'; // или просто вычислить
- *
- * let path = 'components/Osagotime/Gui__Standard/';
- *
- */
-

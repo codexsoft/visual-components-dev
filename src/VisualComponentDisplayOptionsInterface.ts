@@ -1,4 +1,4 @@
 export default interface VisualComponentDisplayOptionsInterface {
     providedChildren?: [],
-    providedAttributes?: {}
+    providedAttributes?: any
 }

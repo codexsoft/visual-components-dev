@@ -7,6 +7,8 @@ import NullLogger from "./NullLogger";
 import Detect from "./Detect";
 import Keyboard from "./Keyboard";
 import JstTemplates from "./JstTemplates";
+import ComponentsSettings from "./ComponentsSettings";
+import ComponentsEventDispatcher from "./ComponentsEventDispatcher";
 
 /**
  * Реестр визуальных компонентов
@@ -15,8 +17,10 @@ export default class Components {
 
     public static keyboard: Keyboard;
     public static jstTemplates: JstTemplates;
+    public static dispatcher: ComponentsEventDispatcher;
 
     private static logger: LoggerInterface = new NullLogger();
+    static settings: ComponentsSettings;
 
     private constructor(logger: LoggerInterface|null) {
         // this.logger = logger || new NullLogger();
@@ -119,6 +123,8 @@ export default class Components {
         // debugger;
 
         this.jstTemplates = new JstTemplates();
+        this.settings = new ComponentsSettings();
+        this.dispatcher = new ComponentsEventDispatcher();
 
         if (window.keypress) {
             this.keyboard = new Keyboard(new window.keypress.Listener);
@@ -139,6 +145,15 @@ export default class Components {
             */
 
         }
+
+    }
+
+    public static findParentComponent(component: VisualComponent): VisualComponent|null {
+
+        let $self = component.$element();
+
+        let $parentComponent = $self.parent().closest( '.VisualComponent' );
+        return $parentComponent.length ? $parentComponent.get(0).model : null;
 
     }
 

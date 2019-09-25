@@ -55,9 +55,11 @@ export default abstract class Common__Modal extends VisualComponent {
         refresh: () => { this.reRender(); return false; },
     };}
 
-    async activate() {
-        await this.$element().find('div.component').mountComponent( this.component );
-        Components.keyboard.focusOn( this.component );
+    async activateAsync(): Promise<any> {
+        return new Promise(async (resolve: Function, reject: Function) => {
+            await this.$element().find('div.component').mountComponent(this.component);
+            Components.keyboard.focusOn( this.component );
+        });
     }
 
     public getTerminators() {

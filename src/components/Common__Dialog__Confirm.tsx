@@ -4,6 +4,9 @@ import * as _ from "lodash";
 
 export default class Common__Dialog__Confirm extends VisualComponent {
 
+    // public static readonly class: string = __CLASS__;
+    // private readonly class: string = __CLASS__;
+
     private text: string = '- NO TEXT PROVIDED FOR CONFIRMATION -';
     private confirmIsDefault: boolean = false;
     private isFocusedOnConfirm: boolean = false;

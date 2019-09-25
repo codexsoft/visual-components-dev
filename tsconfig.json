@@ -13,6 +13,7 @@
 
 //    "noImplicitAny": true,
 //    "removeComments": true,
+    "experimentalDecorators": true,
     "preserveConstEnums": true,
 //    "outFile": "dist/app.js",
     "sourceMap": false,
@@ -29,8 +30,8 @@
     ]
   },
   "include": [
-//    "**/*"
-    "./src/**/*"
+    "**/*"
+//    "./src/**/*"
   ],
   "exclude": [
     "node_modules"

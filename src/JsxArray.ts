@@ -47,8 +47,8 @@ export default class JsxArray {
 
     }
 
-    public async render(): Promise<any> {
-        return new Promise<Node>(async (resolve: Function, reject: Function) => {
+    public async render(): Promise<HTMLElement> {
+        return new Promise<HTMLElement>(async (resolve: Function, reject: Function) => {
 
             this.resolve = resolve;
 
@@ -344,6 +344,7 @@ export default class JsxArray {
         let generatedElement = await generatedComponent.display({
             providedAttributes: this.attributes,
             providedChildren: renderedChildren,
+            displayWithContainer: false
         });
 
         // вычисляем значение аттрибута CSS-классов
