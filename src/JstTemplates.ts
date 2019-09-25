@@ -4,6 +4,10 @@ import * as Crypto from "crypto-js";
 
 /**
  * Инструменты компиляции шаблонов
+ * https://lodash.com
+ * var compiled = _.template('<% _.forEach(users, function(user) { %><li><%- user %></li><% }); %>');
+ * compiled({ 'users': ['fred', 'barney'] });
+ * → '<li>fred</li><li>barney</li>'
  */
 export default class JstTemplates {
 

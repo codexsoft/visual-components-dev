@@ -17,11 +17,16 @@ import VisualComponent from "./VisualComponent";
 
 export default class Signal {
 
-    public name: string|null = null;
+    public name: string;
     public data: any = {};
     // @ts-ignore
     public trigger: VisualComponent;
     public trip: VisualComponent[] = [];
+
+    constructor(name: string, trigger: VisualComponent) {
+        this.name = name;
+        this.trigger = trigger;
+    }
 
     public by(component: VisualComponent): boolean {
         return component == this.trigger;
