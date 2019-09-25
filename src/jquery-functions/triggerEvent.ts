@@ -1,5 +1,9 @@
-interface JQuery{
-    triggerEvent(eventName: string, params?: Object ): boolean;
+import Tools from "../Tools";
+
+declare global {
+    interface JQuery{
+        triggerEvent(eventName: string, params?: Object ): boolean;
+    }
 }
 
 /**
@@ -12,7 +16,7 @@ $.fn.triggerEvent = function( eventName: string, params: Object = {} ) {
     // debugger;
 
     $(this).each( function( index, elem: HTMLElement ){
-        le.tools.fireCustomEvent( elem, eventName, params );
+        Tools.fireCustomEvent( elem, eventName, params );
     });
 
     return false;

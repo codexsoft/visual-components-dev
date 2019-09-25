@@ -1,14 +1,27 @@
 interface JQuery {
-    selectRange(start: bigint, end?): void;
+    selectRange(start: number, end?: number): void;
+    selectionStart?: number;
+    selectionEnd?: number;
+    setSelectionRange?(start: number, end: number): void;
+    createTextRange?(): any;
 }
 
-$.fn.selectRange = function(start, end): void {
-    if(end === undefined) {
+/**
+ * @param start
+ * @param end
+ */
+$.fn.selectRange = function(start: number, end: number): void {
+
+    if (end === undefined) {
         end = start;
     }
-    this.each(function() {
+
+    // @ts-ignore
+    this.each(function(this: JQuery) {
         if ('selectionStart' in this) {
             this.selectionStart = start;
+            // (<JQuery>this).selectionStart = start;
+            // (<JQuery>this).selectionEnd = end;
             this.selectionEnd = end;
         } else if (this.setSelectionRange) {
             this.setSelectionRange(start, end);

@@ -2,15 +2,24 @@ import LoggerInterface from "./LoggerInterface";
 import Signal from './Signal';
 import * as _ from 'lodash';
 import * as $ from 'jquery';
+import NullLogger from "./NullLogger";
+import ModalComponentInterface from "./ModalComponentInterface";
+import OpenModalOptionsInterface from "./OpenModalOptionsInterface";
+import Components from "./Components";
+import Common__Modal__Blurred from "./components/Common__Modal__Blurred";
+import Common__Modal from "./components/Common__Modal";
+import Common__Dialog__Confirm from "./components/Common__Dialog__Confirm";
+import Detect from "./Detect";
 
 export default abstract class VisualComponent {
 
-    private logger: LoggerInterface;
+    [key: string]: any;
+
+    protected logger: LoggerInterface = new NullLogger();
 
     protected props: {
         config?: Object;
     };
-
 
     /**
      * if true, then no DIV.VisualComponent wrapper generated, used for form fields generating
@@ -29,7 +38,7 @@ export default abstract class VisualComponent {
     /**
      * DOM-элемент, с которым связана модель этого визуального компонента
      */
-    private _element: Element = null;
+    private _element: Element|undefined = undefined;
 
     /**
      * какие события мыши терминировать по умолчанию в этом компоненте?
@@ -41,31 +50,32 @@ export default abstract class VisualComponent {
     /**
      * ID визуального компонента, назначенный в браузере
      */
-    protected id: number = null;
-
-    /**
-     * ID процесса визуального компонента на стороне сервера (если таковой имеется)
-     * @WARE
-     */
-    protected rtid: string = null;
+    protected id: number;
 
     protected selfUrl: string = '';
 
-    public getRtid() {
-        return this.rtid;
-    }
-
     private _jsxProvidedAttributes: Object = {};
+
+    /**
+     * used while rendering
+     */
     private _jsxProvidedChildren: Array<any>;
 
-    constructor( parameters: Object = {} ) {
+    constructor( parameters: {
+        id?: number
+    } = {} ) {
 
-        this.id = le.components.nextId(); // идентификатор DOM визуального компонента
+        this.id = Components.nextId(); // идентификатор DOM визуального компонента
 
-        let identifier = parameters['id'] || null;
+        let identifier: number|null = parameters['id'] || null;
 
-        if ( identifier && $( identifier ).length )
-            this.setElement( $( identifier ).get( 0 ) );
+        if (identifier) {
+            // @ts-ignore
+            let $identifier: JQuery = $(identifier);
+            if ($identifier.length) {
+                this.setElement($identifier.get(0));
+            }
+        }
 
         this.logger.log( 'Сконструирован компонент ' + this.debugName() );
         this._configurate( parameters );
@@ -82,7 +92,7 @@ export default abstract class VisualComponent {
     }
 
     protected exportData() {
-        let exportObj = {};
+        let exportObj: any = {};
         _.forEach( this, ( value, key ) => {
 
             if (_.includes([
@@ -111,7 +121,7 @@ export default abstract class VisualComponent {
      */
     protected _configurate( parameters: Object ) {
 
-        let self = this;
+        let self: VisualComponent = this;
 
         let stringified = JSON.stringify(parameters);
         if ( stringified.length <= 200 ) {
@@ -124,7 +134,7 @@ export default abstract class VisualComponent {
             this.logger.minor(parameters);
 
         _.forEach( parameters, ( value, key ) => {
-
+            // @ts-ignore
             self[key] = value;
         } );
 
@@ -150,8 +160,8 @@ export default abstract class VisualComponent {
      * назначенный ID при конструировании в le.components
      * @returns {number}
      */
-    public getId() {
-        return this.id;
+    public getId(): number {
+        return <number>this.id;
     }
 
     /**
@@ -160,15 +170,11 @@ export default abstract class VisualComponent {
      * @returns {this}
      */
     public installAppending( element: Element ): Promise<VisualComponent> {
-
-        let def = $.Deferred();
-
-        $(element).mountComponent( this, { mode: 'append' } ).done( () => {
-            def.resolve( this );
-        } );
-
-        return <Promise<VisualComponent>> def.promise();
-
+        let self: VisualComponent = this;
+        return new Promise<VisualComponent>(async function(resolve: Function, reject: Function) {
+            await $(element).mountComponent(self, { mode: 'append' });
+            resolve(self);
+        });
     }
 
     /**
@@ -176,15 +182,20 @@ export default abstract class VisualComponent {
      * @param element
      * @returns {this}
      */
-    public installInstead( element: Element ): Promise<VisualComponent> {
+    public async installInstead( element: Element ): Promise<VisualComponent> {
 
-        let def = $.Deferred();
+        let self: VisualComponent = this;
+        // let def = $.Deferred();
+        return new Promise<VisualComponent>(async function(resolve: Function, reject: Function) {
+            await $(element).mountComponent(self, { mode: 'replace' });
+            resolve(self);
+        });
 
-        $(element).mountComponent( this, { mode: 'replace' } ).done( () => {
-            def.resolve( this );
-        } );
+        // $(element).mountComponent( this, { mode: 'replace' } ).done( () => {
+        //     def.resolve( this );
+        // } );
 
-        return <Promise<VisualComponent>> def.promise();
+        // return <Promise<VisualComponent>> def.promise();
 
     }
 
@@ -255,24 +266,25 @@ export default abstract class VisualComponent {
      * Открыть модальное окно, назначив родительским этот компонент
      * @param options
      */
-    protected openModal(options: OpenModalOptions ): ModalComponentInterface {
+    protected openModal(options: OpenModalOptionsInterface): ModalComponentInterface {
 
-        debugger;
-        let modalComponent = options.modalComponent || new Component.Common__Modal__Blurred;
+        // debugger;
+        let modalComponent = options.modalComponent || new Common__Modal__Blurred;
 
-        if ( typeof options['title'] !== "undefined" && typeof modalComponent['setTitle'] !== "undefined" )
-            modalComponent['setTitle']( options['title'] );
+        if (typeof options.title !== "undefined" && typeof modalComponent.setTitle !== "undefined") {
+            modalComponent['setTitle'](options.title);
+        }
 
         let subComponent = options.content;
         let signalHandlers = options.signals || {};
-        let signalTerminators = options.terminators || {};
+        let signalTerminators: {} = options.terminators || {};
 
-        let handlers = _.merge( signalHandlers, signalTerminators );
+        let handlers = _.merge(signalHandlers, signalTerminators);
 
         modalComponent
             .setParentComponent(this)
             .setComponent( subComponent )
-            .fire( handlers, _.keys( signalTerminators ) );
+            .fire(handlers, <[]>_.keys(signalTerminators));
 
         return modalComponent;
 
@@ -285,7 +297,7 @@ export default abstract class VisualComponent {
      * @param signalHandlers
      * @deprecated
      */
-    protected modal(modalComponent: Component.Common__Modal, subComponent: VisualComponent, signalHandlers: Object = {} ) {
+    protected modal(modalComponent: Common__Modal, subComponent: VisualComponent, signalHandlers: Object = {} ) {
 
         modalComponent
             .setParentComponent(this)
@@ -300,26 +312,24 @@ export default abstract class VisualComponent {
      * @param text
      * @param handlers
      */
-    protected confirm( text: string, handlers: Object ) {
+    protected confirm( text: string, handlers: Object|any) {
 
-        if ( typeof window['Component']['Common__Dialog__Confirm'] === 'undefined' ) {
-            this.logger.error('Component.Common__Dialog__Confirm VisualComponent not found!!!');
-            return;
-        }
+        // if ( typeof window.Common__Dialog__Confirm === 'undefined' ) {
+        //     this.logger.error('Common__Dialog__Confirm VisualComponent not found!!!');
+        //     return;
+        // }
 
         this.openModal({
 
             title: 'Требуется подтверждение',
 
-            content: ( new Component.Common__Dialog__Confirm )
+            content: (new Common__Dialog__Confirm)
                 .setDefault(false)
                 .setText(text),
 
             terminators: {
-
-                yes: ( s: Signal ) => handlers['yes'] ? handlers['yes'] : () => {},
-                no: ( s: Signal ) => handlers['no'] ? handlers['no'] : () => {},
-
+                yes: ( s: Signal ) => handlers.yes ? handlers.yes : () => {},
+                no: ( s: Signal ) => handlers.no ? handlers.no : () => {},
             }
 
         });
@@ -331,7 +341,7 @@ export default abstract class VisualComponent {
      * @param content
      * @param id
      */
-    public prerenderedContentUpdate(content: string, id: string = null ) {
+    public prerenderedContentUpdate(content: string, id?: string ) {
 
         this.logger.major('Обновление контента компонента '+id+' и реактивация!');
 
@@ -353,14 +363,14 @@ export default abstract class VisualComponent {
      * А то это жесткая привязка к модулю keypress
      */
     protected setFocus(): void {
-        le.keyboard.focusOn( this );
+        Components.keyboard.focusOn( this );
     }
 
     /**
      * снять фокусировку keypress с этого компонента
      */
     protected unfocus(): void {
-        le.keyboard.unfocus( this );
+        Components.keyboard.unfocus( this );
     }
 
     protected killViewport(): void {
@@ -368,7 +378,9 @@ export default abstract class VisualComponent {
     }
 
     public setElement( domElement: Element ): void {
-        if ( _.isElement( domElement ) ) this._element = domElement;
+        if ( _.isElement( domElement ) ) {
+            this._element = domElement;
+        }
     }
 
     protected getClass(): string {
@@ -388,6 +400,7 @@ export default abstract class VisualComponent {
     }
 
     protected getClassStatic() {
+        // @ts-ignore
         let staticClass = window[this.getClass()];
         return staticClass ? staticClass : false;
     }
@@ -400,7 +413,7 @@ export default abstract class VisualComponent {
         return le.ware.settings.urlToRoot+'src/components/'+this.getClass()+'/';
     }
 
-    protected cssUrl( fileName ) {
+    protected cssUrl(fileName: string): string {
         return 'url("' + this.backendUrl() + fileName + '")';
     }
 
@@ -440,7 +453,7 @@ export default abstract class VisualComponent {
     public __start() {
         this.__startListenEvents();
         this.logger.minor('Активация компонента '+this.debugName());
-        le.keyboard.registerCombos( this.id, this.listenKeyboard() );
+        Components.keyboard.registerCombos( this.id, this.listenKeyboard() );
         this.activate(); // TODO: сделать на promise-ах
     }
 
@@ -450,7 +463,8 @@ export default abstract class VisualComponent {
      */
     public __stop() {
         this.logger.minor('Деактивация компонента '+this.debugName());
-        le.keyboard.unregisterCombosForComponent( this.id );
+        // todo: fire event, keyboard must be pluggable!
+        Components.keyboard.unregisterCombosForComponent(this.id);
         this.deactivate();
     }
 
@@ -479,9 +493,11 @@ export default abstract class VisualComponent {
      * @param foundAncestors array
      * @returns array
      */
-    public getAncestors( foundAncestors: Array<string> = null ) {
+    public getAncestors(foundAncestors?: string[]) {
 
-        if ( !foundAncestors ) foundAncestors = [];
+        if (!foundAncestors) {
+            foundAncestors = [];
+        }
 
         if ( !this['__proto__'] || !this['__proto__'].constructor )
             return foundAncestors;
@@ -491,33 +507,31 @@ export default abstract class VisualComponent {
             return foundAncestors;
 
         foundAncestors.push( this['__proto__'].constructor.name );
+
         return this['__proto__'].getAncestors
             ? this['__proto__'].getAncestors( foundAncestors )
             : foundAncestors;
-
     }
 
     /**
      * Генерация DOM-события
      */
-    public trigger( name: string, parameters: Object = {} ): VisualComponent {
+    public trigger(name: string, parameters: Object = {}): VisualComponent {
 
         if ( !this.$element().length ) {
             this.logger.notice('Failed to trigger event by component '+this.debugName()+': no DOM element tied!');
             return this;
         }
 
-        let msg = 'Component '
-            +this.debugName()
-            +' triggered event '
-            +name;
-
-        msg += ( _.isEmpty(parameters) ? ' without parameters' : ' providing parameters:' );
+        let msg = 'Component '+this.debugName()+' triggered event '+name;
+        msg += (_.isEmpty(parameters) ? ' without parameters' : ' providing parameters:');
         this.logger.minor(msg);
 
-        if ( !_.isEmpty(parameters) )
+        if (!_.isEmpty(parameters)) {
             this.logger.minor(parameters);
-        this.$element().triggerEvent( name, parameters );
+        }
+
+        this.$element().triggerEvent(name, parameters);
         return this;
 
     }
@@ -547,42 +561,10 @@ export default abstract class VisualComponent {
      * @returns {string}
      */
     protected renderJsTemplate( templateName: string, parameters: Object = {} ): string {
+        let templateId = 'template_jst_'+this.getClass()+'_'+templateName;
+        let templateString = $('#'+templateId).html();
 
-        if ( typeof _ == 'undefined' ) {
-            this.logger.error( 'Cannot render javascript template ' + templateName + ' - required lodash module is undefined!' );
-            return '';
-        }
-
-        parameters['_this'] = this;
-
-        let templatePrefix = 'template_jst_' + this.getClass() + '_';
-        let templateId = templatePrefix + templateName;
-
-        let compiled = null;
-
-        if ( le.templates.templateIsCached( templateId ) ) {
-            this.logger.log( 'compiling ' + templateId + ' from cache with parameters:' );
-            this.logger.log( parameters );
-            compiled = le.templates.getCached(templateId);
-        } else {
-            this.logger.log( 'compiling ' + templateId + ' by lodash with parameters:' );
-            this.logger.log( parameters );
-            let templateString = $( '#' + templateId ).html();
-            if ( !templateString ) {
-                this.logger.error( 'Template ' + templateId + ' not found!' );
-                return '';
-            }
-            compiled = _.template( templateString, {variable: 'data'} );
-            le.templates.cacheTemplate( templateId, compiled );
-        }
-
-        try {
-            return compiled( parameters );
-        } catch ( e ) {
-            this.logger.error('Exception while compiling template '+templateName+': '+e.toString());
-            return '';
-        }
-
+        return Components.jstTemplates.render(templateString, this, parameters);
     }
 
     /**
@@ -769,9 +751,10 @@ export default abstract class VisualComponent {
      * Хорошее место для подготовки всего что нужно для рендера компонента.
      * Вызывается каждый раз перед рендером компонента
      * Promise-совместим!
+     * todo: should be protected, but currently used by $.assignComponentToPrerendered
      * @returns {boolean}
      */
-    protected beforeRender() {
+    public beforeRender() {
         return;
     }
 
@@ -911,9 +894,10 @@ export default abstract class VisualComponent {
             return;
         }
 
-        if ( parentModel instanceof VisualComponent )
+        // noinspection SuspiciousTypeOfGuard
+        if ( parentModel instanceof VisualComponent ) {
             parentModel._signalHandle( signal );
-
+        }
     }
 
     /**
@@ -929,7 +913,7 @@ export default abstract class VisualComponent {
         // TODO: можно не элементы, а модели в путь включать
 
         let path = [];
-        let $current = $( e.target );
+        let $current = $( <Element>e.target );
         let $parent;
 
         do {
@@ -944,7 +928,8 @@ export default abstract class VisualComponent {
 
             $current = $parent;
 
-        } while ( $parent.length && $parent.get(0) !== this.element() && $parent.get(0) !== document );
+        } while ( $parent.length && $parent.get(0) !== this.element());
+        // } while ( $parent.length && $parent.get(0) !== this.element() && $parent.get(0) !== document );
 
         return path;
 
@@ -959,7 +944,7 @@ export default abstract class VisualComponent {
 
         // TODO: можно путь взять отсюда: window.testEvent.path
 
-        let $current = $( e.target );
+        let $current = $( <Element>e.target );
         let $parent;
         let path = [];
 
@@ -968,10 +953,10 @@ export default abstract class VisualComponent {
             if ( $parent.length )
                 path.push( $parent.get(0) );
             $current = $parent;
-        } while ( $parent.length && $parent.get(0) !== this.element() && $parent.get(0) !== document );
+        } while ( $parent.length && $parent.get(0) !== this.element());
+        // } while ( $parent.length && $parent.get(0) !== this.element() && $parent.get(0) !== document );
 
         return path;
-
     }
 
     /**
@@ -990,10 +975,9 @@ export default abstract class VisualComponent {
      */
     protected isEventInternal( e: Event ): boolean {
 
-        return ( $( e.target )
+        return ( $(<Element>e.target)
             .closest('.VisualComponent')
             .get(0) === this.element() );
-
     }
 
     //noinspection JSMethodCanBeStatic
@@ -1012,7 +996,7 @@ export default abstract class VisualComponent {
 
         signal.trip.push( this );
         let continueBubbling = true; // bubbling by default!
-        let handlerMethodName = 'on_' + signal.name;
+        let handlerMethodName: string = 'on_' + signal.name;
 
         if ( this[handlerMethodName] ) {
 

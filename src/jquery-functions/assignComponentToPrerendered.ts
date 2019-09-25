@@ -1,5 +1,6 @@
 import VisualComponent from "../VisualComponent";
-import * as _ from "lodash";
+// import * as _ from "lodash";
+import Components from "../Components";
 
 declare global {
 
@@ -14,27 +15,34 @@ declare global {
  * @param componentModel
  * @param parameters
  */
-$.fn.assignComponentToPrerendered = function(componentModel: VisualComponent|Function, parameters: Object = {} ): JQuery {
+$.fn.assignComponentToPrerendered = function(this: JQuery, componentModel: VisualComponent|Function, parameters: Object = {} ): JQuery {
 
     if ( !this.length ) {
-        throw new Error('No elements in a set :'+<JQuery<HTMLElement>>this.selector);
+        // @ts-ignore
+        throw new Error('No elements in a set :'+this.selector);
     }
 
     let element = this.get(0);
 
     // if ( _.isFunction( componentModel ) ) {
-    if (typeof componentModel === 'function') {
+    if (componentModel instanceof Function) {
+    // if (typeof componentModel === 'function') {
+        // @ts-ignore
         componentModel = new componentModel(parameters);
     }
 
-    if (componentModel instanceof VisualComponent === false) {
+    // /** @var componentModel VisualComponent */
+
+    if (!(componentModel instanceof VisualComponent)) {
         throw new Error('Класс '+componentModel+' не является визуальным компонентом!');
+    } else {
+        Components.tie(element, componentModel);
+        componentModel.beforeRender();
+        componentModel.__start();
+        return $(this);
     }
 
     // expect( componentModel instanceof VisualComponent, 'Класс '+componentModel+' не является визуальным компонентом!' );
 
-    le.components.tie(element,componentModel);
-    componentModel.beforeRender();
-    componentModel.__start();
-    return $(this);
+
 };

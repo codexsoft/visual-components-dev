@@ -19,7 +19,8 @@ export default class Signal {
 
     public name: string|null = null;
     public data: any = {};
-    public trigger: VisualComponent|null = null;
+    // @ts-ignore
+    public trigger: VisualComponent;
     public trip: VisualComponent[] = [];
 
     public by(component: VisualComponent): boolean {

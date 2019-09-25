@@ -1,4 +1,5 @@
 import VisualComponent from "../VisualComponent";
+import Components from "../Components";
 
 declare global {
 
@@ -8,9 +9,10 @@ declare global {
 
 }
 
-$.fn.mountComponent = async function( component: VisualComponent, options: {mode: string} = {mode: 'replace'} ): Promise<Element> {
+$.fn.mountComponent = async function(this: JQuery, component: VisualComponent, options: {mode: string} = {mode: 'replace'} ): Promise<Element> {
 
-    if (component instanceof VisualComponent === false) {
+    // noinspection SuspiciousTypeOfGuard
+    if (!(component instanceof VisualComponent)) {
         throw new Error('component must be instance of VisualComponent!');
     }
 
@@ -21,40 +23,40 @@ $.fn.mountComponent = async function( component: VisualComponent, options: {mode
     switch( mode ) {
 
         case 'replace':
-            le.components.stopComponentsInNode( originalDomElement );
+            Components.stopComponentsInNode( originalDomElement );
             if ( 'model' in originalDomElement ) {
                 originalDomElement.model.__stop();
             }
             break;
 
         case 'into':
-            le.components.stopComponentsInNode( originalDomElement );
+            Components.stopComponentsInNode( originalDomElement );
             break;
 
     }
 
-    return new Promise<Element>(async (resolve, reject) => {
+    return new Promise<Element>(async (resolve: Function, reject: Function) => {
 
         let rendered = await component.display();
 
         switch( mode ) {
 
             case 'append':
-                originalDomElement.appendChild( rendered );
+                originalDomElement.appendChild(rendered);
                 break;
 
             case 'replace':
                 $originalDomElement.empty();
-                $originalDomElement.replaceWith( rendered );
+                $originalDomElement.replaceWith(rendered);
                 break;
 
             case 'into':
                 $originalDomElement.empty();
-                $originalDomElement.html( rendered );
+                $originalDomElement.html(rendered);
                 break;
 
         }
 
-        resolve( rendered );
+        resolve(rendered);
     });
 };

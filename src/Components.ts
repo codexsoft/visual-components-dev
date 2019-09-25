@@ -1,25 +1,31 @@
 import * as $ from 'jquery';
 import * as _ from 'lodash';
+import * as Keypress from 'keypress.js';
 import LoggerInterface from "./LoggerInterface";
 import VisualComponent from "./VisualComponent";
 import NullLogger from "./NullLogger";
 import Detect from "./Detect";
+import Keyboard from "./Keyboard";
+import JstTemplates from "./JstTemplates";
 
 /**
  * Реестр визуальных компонентов
  */
 export default class Components {
 
-    private logger: LoggerInterface;
+    public static keyboard: Keyboard;
+    public static jstTemplates: JstTemplates;
 
-    constructor(logger: LoggerInterface|null) {
-        this.logger = logger || new NullLogger();
+    private static logger: LoggerInterface = new NullLogger();
+
+    private constructor(logger: LoggerInterface|null) {
+        // this.logger = logger || new NullLogger();
     }
 
     /**
      * Достаточно полный перечень событий браузера, разбитый по группам
      */
-    public readonly DOMEvents = {
+    public static readonly DOMEvents = {
         UIEvent: "abort DOMActivate error load resize scroll select unload",
         ProgressEvent: "abort error load loadend loadstart progress progress timeout",
         Event: "abort afterprint beforeprint cached canplay canplaythrough change chargingchange chargingtimechange checking close dischargingtimechange DOMContentLoaded downloading durationchange emptied ended ended error error error error fullscreenchange fullscreenerror input invalid languagechange levelchange loadeddata loadedmetadata noupdate obsolete offline online open open orientationchange pause pointerlockchange pointerlockerror play playing ratechange readystatechange reset seeked seeking stalled submit success suspend timeupdate updateready visibilitychange volumechange waiting",
@@ -58,15 +64,9 @@ export default class Components {
     /**
      * @private
      */
-    private _lastId = 0;
+    private static _lastId = 0;
 
-    /**
-     * @deprecated
-     * @type {{}}
-     */
-    private list = {};
-
-    public activatePrerendered( $element: JQuery, componentClass, params: Object = {} ) {
+    public static activatePrerendered( $element: JQuery, componentClass: Function, params: Object = {} ) {
 
         this.logger.space();
         this.logger.major('Активация компонента '+Detect.className(componentClass)+', предварительно отрендеренного сервером: ');
@@ -81,400 +81,19 @@ export default class Components {
 
     }
 
-    public stopComponentsInNode( node: Element ): void {
+    public static stopComponentsInNode( node: Element ): void {
         // TODO: а не включить ли .add(node) сюда?
         let $components = $(node).find('.VisualComponent');
-        _.forEach( $components, function(component: HTMLElement) {
-            $(component).model().__stop();
+        _.forEach($components, (component) => {
+            $(<HTMLElement>component).model().__stop();
         } );
-    }
-
-    private renderChildren( children: Array<any> ): Promise<Array<Element>|{}> {
-
-        // let def = $.Deferred();
-        let pendingRenderingElements: any[] = [];
-        let providedChildren = [];
-
-        _.forEach(children, async childNode => {
-
-            if ( _.isString(childNode) ) {
-                pendingRenderingElements.push(document.createTextNode(childNode));
-            } else if ( childNode instanceof HTMLElement ) {
-                pendingRenderingElements.push(childNode);
-            } else if ( _.isArray(childNode) ) {
-                // а надо ли нам сразу рендерить вложенные компоненты? Ведь в компонент они будут переданы параметром,
-                // и не факт что будут использованы... Ну ладно, пока так
-
-                if (_.isElement(childNode[0])) {
-                    _.forEach(childNode, (elem) => {
-                        pendingRenderingElements.push(elem);
-                    } );
-                } else {
-                    pendingRenderingElements.push(await this.renderJsxArray(childNode));
-
-                }
-
-            } else if ( childNode instanceof VisualComponent ) {
-                pendingRenderingElements.push(await this.renderJsxArray(childNode));
-                // pendingRenderingElements.push( jsx(childNode) );
-            }
-
-        } );
-
-        return new Promise<Element[]>(async (resolve, reject) => {
-            // Promise.all(pendingRenderingElements).then((...generatedChildren) => {
-            Promise.all(pendingRenderingElements).then((generatedChildren) => {
-                resolve(<Element[]><unknown>generatedChildren);
-            });
-        });
-
-
-
-        // $.when( ...pendingRenderingElements ).done(( ...generatedChildren )=> {
-        //     def.resolve( generatedChildren );
-        // });
-
-        // return def.promise();
-
-    }
-
-    private async renderJsxFromNotVisualComponent(type: string, attributes: Object|any = {}, resolve: Function): Promise<Node> {
-
-        Promise.all(children).then((renderedChildren: Array<Element>) => {
-
-            Promise.all(type({
-                providedAttributes: attributes,
-                providedChildren: renderedChildren,
-            }).then((result) => {
-                if (_.isArray(result) === false) {
-                    return resolve( $(result).get(0) );
-                }
-
-                Promise.all(this.renderJsxArray(result)).then(rendered => {
-                    // вычисляем значение аттрибута CSS-классов
-                    if (attributes['class']) {
-                        $(rendered).addClass(attributes['class']);
-                        delete attributes['class'];
-                    }
-
-                    // вешаем указанные в аттрибутах события или же устанавливаем эти самые аттрибуты
-                    // это и для компонента, и для обычного тега
-
-                    this.applyAttributesToElement(rendered, attributes);
-                    return resolve(rendered);
-                });
-            }));
-
-        });
-
-    }
-
-    private async renderJsxFromVisualComponent(type: string, attributes: Object|any, initParams: Object|any, resolve: Function): Promise<Node> {
-        let generatedComponent: VisualComponent;
-
-        if (typeof type === 'function') {
-            generatedComponent = new type(initParams);
-        // } else if ( _.isObject(type) && type instanceof VisualComponent ) {
-        } else if ((typeof type === 'object') && (type instanceof VisualComponent)) {
-
-            // если элемент - уже существующий визуальный компонент
-            generatedComponent = type;
-
-        }
-
-        if (generatedComponent instanceof VisualComponent === false) {
-            throw new Error(Detect.className(type)+' poor VisualComponent generator/instance!');
-        }
-        // expect( generatedComponent instanceof VisualComponent, Detect.className(type)+' poor VisualComponent generator/instance!' );
-
-        let renderedChildren: Array<Element> = await this.renderChildren(children);
-        let generatedElement = await generatedComponent.display({
-            providedAttributes: attributes,
-            providedChildren: renderedChildren,
-        });
-
-        // вычисляем значение аттрибута CSS-классов
-        if (attributes['class']) {
-            $(generatedElement).addClass( attributes['class'] );
-            delete attributes['class'];
-        }
-
-        // вешаем указанные в аттрибутах события или же устанавливаем эти самые аттрибуты
-        // это и для компонента, и для обычного тега
-
-        this.applyAttributesToElement(generatedElement, attributes);
-        resolve(generatedElement);
-
-
-
-
-
-        // Promise.all(this.renderChildren(children)).then(async (renderedChildren: Array<Element>)=>{
-        //     let generatedElement = await generatedComponent.display({
-        //         providedAttributes: attributes,
-        //         providedChildren: renderedChildren,
-        //     });
-        // });
-        //
-        // $.when( le.components.renderChildren( children ) ).done(( renderedChildren: Array<Element> )=>{
-        //
-        //     $.when( generatedComponent.display({
-        //         providedAttributes: attributes,
-        //         providedChildren: renderedChildren,
-        //     }) ).done( ( generatedElement: Element ) => {
-        //
-        //         if ( attributes['class'] ) {
-        //
-        //             $(generatedElement).addClass( attributes['class'] );
-        //
-        //             delete attributes['class'];
-        //         }
-        //
-        //         le.components.applyAttributesToElement( generatedElement, attributes );
-        //         def.resolve( generatedElement );
-        //
-        //     } );
-        //
-        // });
-    }
-
-    private async renderJsxFromString(type: string, attributes: Object|any = {}, children: any[], resolve: Function): Promise<Node> {
-
-        // специальные теги
-
-        if ( type == 'for' ) {
-
-            if ( !('each' in attributes) ) {
-                this.logger.warn('Incorrect "each" attribute in FOREACH statement!');
-                return resolve( new Comment );
-            }
-
-            if ( !('do' in attributes) ) {
-                this.logger.warn('Incorrect "do" attribute in FOREACH statement!');
-                return resolve( new Comment );
-            }
-
-            let list = attributes['each'];
-            let func = attributes['do'];
-            let result: any[] = [];
-
-            let iterator = 1;
-            _.forEach(list,(val,key,arr)=>{
-                result.push( func(val,key,iterator,arr) );
-                iterator++;
-            });
-
-            let rendered = await this.renderJsxArray('component',{},result);
-            return resolve(rendered);
-
-            // this.renderJsxArray('component',{},result).done((rendered)=>{
-            //     resolve( rendered );
-            // });
-
-            // return def.promise();
-
-        } else if ( type == 'if' ) {
-
-            if ( 'pass' in attributes && !attributes['pass'] )
-                return resolve( new Comment );
-
-            else if ( 'not' in attributes && !!attributes['not'] )
-                return resolve( new Comment );
-
-            else if ( !('not' in attributes || 'pass' in attributes) ) {
-
-                this.logger.warn('Incorrect condition in IF statement!');
-                return resolve( new Comment );
-
-            } else if ( 'then' in attributes ) {
-
-                // может быть полезно в тех случаях, когда генерация вложенных компонентов
-                // использует какие-то переменные, которые будут неопределены в случае,
-                // если условие, определенное в pass/not не сработает
-
-                let thenClosure = attributes['then'];
-                if (!_.isFunction(thenClosure)) {
-                    this.logger.warn('Incorrect THEN attribute in IF statement!');
-                    return resolve( new Comment );
-                }
-                let result = thenClosure();
-                this.renderJsxArray('component',{},result).done((rendered)=>{
-                    return resolve( rendered );
-                });
-
-                // return def.promise();
-
-            }
-
-        } else if ( type == 'switch' ) {
-            let testingValue = attributes['var'];
-
-            let strictMode = false;
-            if ( 'strict' in attributes ) {
-                strictMode = !_.includes(['false',false], attributes['strict']);
-            }
-
-            let matchedCase = null;
-            let defaultCase = null;
-
-            for (let i = 0; i < children.length; i++) {
-
-                let caseChild = children[i];
-                if ( !_.isArray(caseChild) ) continue;
-
-                if ( caseChild[0] === 'default' ) {
-                    defaultCase = caseChild;
-                    continue;
-                }
-
-                if ( caseChild[0] != 'case' ) continue;
-                let childAttributes = caseChild[1];
-                if ( !('value' in childAttributes) ) continue;
-                if ( ( !strictMode && testingValue == childAttributes['value'] ) || ( strictMode && testingValue === childAttributes['value'] ) ) {
-                    matchedCase = caseChild;
-                    break;
-                }
-            }
-
-            if (matchedCase) {
-                children = [ matchedCase ];
-            } else if ( defaultCase ) {
-                children = [ defaultCase ];
-            } else {
-                return resolve(new Comment);
-            }
-
-        }
-
-        // если элемент - обычный тег, то привязывать компонент к нему не надо
-        let generatedElement = document.createElement(type);
-        this.applyAttributesToElement( generatedElement, attributes );
-
-        let renderedChildren = await this.renderChildren(children);
-        _.forEach(renderedChildren, (renderedChild: Element) => {
-
-            if (renderedChild instanceof Text)
-                generatedElement.appendChild(renderedChild);
-            else if ( renderedChild instanceof Element ) {
-
-                switch (renderedChild.tagName) {
-
-                    case 'COMPONENT':
-                    case 'FOREACH':
-                    case 'SWITCH':
-                    case 'DEFAULT':
-                    case 'CASE':
-                    case 'IF':
-
-                        // debugger;
-
-                        _.forEach($(renderedChild).contents(),(ifChildNode)=>{
-                            if ( ifChildNode instanceof Node )
-                                generatedElement.appendChild(ifChildNode);
-                            else
-                                $(generatedElement).append(ifChildNode);
-
-                        });
-
-                        break;
-
-                    default:
-                        generatedElement.appendChild(renderedChild);
-                }
-
-            }
-
-            resolve(generatedElement);
-
-        });
-
-    }
-
-    public async renderJsxArray( type: any, config: Object = {}, ...children: Array<any>): Promise<Node|{}> {
-
-        // если передан один параметр и он массив, то вытаскиваем параметры
-        if ( _.isArray(type) ) {
-
-            let tempParams = _.clone(type);
-            if ( _.isArray(tempParams[0]) ) {
-                type = 'component'; // TEMP!!!
-                config = {};
-                children = tempParams;
-            } else {
-                type = tempParams.shift();
-                config = tempParams.shift();
-                children = tempParams;
-            }
-
-            // delete(tempParams);
-            // tempParams = undefined;
-
-        }
-
-        return new Promise<Node>(async (resolve, reject) => {
-
-            if (_.isUndefined(type)) {
-                return resolve(new Comment);
-            }
-
-            if (type instanceof HTMLElement || type instanceof Text) {
-                return resolve(type);
-            }
-
-            let attributes: Object|any = config || {};
-            let generatedElement: HTMLElement;
-
-            if ( _.isString(type) ) {
-                return await this.renderJsxFromString(type, attributes, children, resolve);
-            } else {
-
-                let initParams = {};
-                if ( attributes['config'] ) {
-                    initParams = attributes['config'];
-                    delete attributes['config'];
-                }
-
-                if (!Detect.isVisualComponent(type)) {
-                    return this.renderJsxFromNotVisualComponent(type, attributes, resolve);
-                } else {
-                    return this.renderJsxFromVisualComponent(type, attributes, initParams, resolve);
-                }
-
-            }
-
-
-        });
-
-        // TODO: сохранять в generatedElement.meta type, config?
-    }
-
-    private applyAttributesToElement( element: Element, attributes: Object ): void {
-
-        _.forEach( attributes, ( value, attribute: string ) => {
-
-            if ( _.startsWith(attribute,'on') ) { // а если аттрибут типа onetwo = '123'?
-
-                $(element).off(attribute.substring(2)); // снимаем существующий обработчик, если был
-                $(element).on( attribute.substring(2), <EventListener>value );
-
-            } else {
-                if ( _.startsWith(attribute,'data-') && _.isObjectLike(value) ) {
-                    element.setAttribute(attribute, JSON.stringify(value)); // а если еще раз вызвать, перезапишет?
-                } else {
-                    element.setAttribute(attribute, value); // а если еще раз вызвать, перезапишет?
-                }
-
-            }
-
-        });
-
     }
 
     /**
      * Генерирует следующий по счету ID для нового визуального компонента
      * @returns {number}
      */
-    public nextId() {
+    public static nextId(): number {
         //debugger;
         this._lastId++;
         return this._lastId;
@@ -485,18 +104,42 @@ export default class Components {
      * @param element
      * @param model
      */
-    public tie( element: Element, model: VisualComponent ) {
+    public static tie( element: Element, model: VisualComponent ): void {
         model.setElement( element );
         element.model = model;
     }
 
-    /**
-     * @deprecated
-     * @param componentId
-     * @param componentData
-     */
-    public register( componentId, componentData ){
-        this.list[componentId] = componentData;
+    public static create(constructorFunction: Function, parameters: {} = {}): VisualComponent {
+        // @ts-ignore
+        return new constructorFunction(parameters);
+    }
+
+    public static init() {
+
+        // debugger;
+
+        this.jstTemplates = new JstTemplates();
+
+        if (window.keypress) {
+            this.keyboard = new Keyboard(new window.keypress.Listener);
+
+            /*
+            this.keyboard.registerCombos( 0, {
+                // TODO: глобальные обработчики, при этом, не должны ПЕРЕКРЫВАТЬ ввод текста в input, например.
+                // TODO: это не будет работать, чтобы работало нужно чтобы фокус был
+                'alt 1': () => {
+                    le.debug.devInfoSwitch();
+                },
+
+                // TODO: это не будет работать, чтобы работало нужно чтобы фокус был
+                'alt 2': () => {
+                    le.debug.keyboardFocusVisibleSwitch();
+                }
+            });
+            */
+
+        }
+
     }
 
 }

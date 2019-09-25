@@ -16,6 +16,8 @@
     "preserveConstEnums": true,
 //    "outFile": "dist/app.js",
     "sourceMap": false,
+    "jsx": "react",
+    "jsxFactory": "Array",
     "strict": true,
     "lib": [
           "dom",

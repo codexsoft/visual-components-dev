@@ -1,5 +1,9 @@
-interface JQuery {
-    simpleEvent( eventName: string): void;
+import Tools from "../Tools";
+
+declare global {
+    interface JQuery {
+        simpleEvent( eventName: string): void;
+    }
 }
 
 /**
@@ -9,7 +13,7 @@ interface JQuery {
 $.fn.simpleEvent = function( eventName: string ): void {
 
     $(this).each( function( index, elem: HTMLElement ){
-        le.tools.fireEvent( elem, eventName );
+        Tools.fireEvent( elem, eventName );
     });
 
 };

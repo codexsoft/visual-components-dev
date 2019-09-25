@@ -1,0 +1,658 @@
+import * as $ from 'jquery';
+import * as _ from 'lodash';
+import LoggerInterface from "./LoggerInterface";
+import VisualComponent from "./VisualComponent";
+import NullLogger from "./NullLogger";
+import Detect from "./Detect";
+
+/**
+ * Реестр визуальных компонентов
+ */
+export default class Components {
+
+    private logger: LoggerInterface;
+
+    constructor(logger: LoggerInterface|null) {
+        this.logger = logger || new NullLogger();
+    }
+
+    /**
+     * Достаточно полный перечень событий браузера, разбитый по группам
+     */
+    public readonly DOMEvents = {
+        UIEvent: "abort DOMActivate error load resize scroll select unload",
+        ProgressEvent: "abort error load loadend loadstart progress progress timeout",
+        Event: "abort afterprint beforeprint cached canplay canplaythrough change chargingchange chargingtimechange checking close dischargingtimechange DOMContentLoaded downloading durationchange emptied ended ended error error error error fullscreenchange fullscreenerror input invalid languagechange levelchange loadeddata loadedmetadata noupdate obsolete offline online open open orientationchange pause pointerlockchange pointerlockerror play playing ratechange readystatechange reset seeked seeking stalled submit success suspend timeupdate updateready visibilitychange volumechange waiting",
+        AnimationEvent: "animationend animationiteration animationstart",
+        AudioProcessingEvent: "audioprocess",
+        BeforeUnloadEvent: "beforeunload",
+        TimeEvent: "beginEvent endEvent repeatEvent",
+        OtherEvent: "blocked complete upgradeneeded versionchange",
+        FocusEvent: "blur DOMFocusIn  Unimplemented DOMFocusOut  Unimplemented focus focusin focusout",
+        MouseEvent: "click contextmenu dblclick mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup show",
+        SensorEvent: "compassneedscalibration Unimplemented userproximity",
+        OfflineAudioCompletionEvent: "complete",
+        CompositionEvent: "compositionend compositionstart compositionupdate",
+        ClipboardEvent: "copy cut paste",
+        DeviceLightEvent: "devicelight",
+        DeviceMotionEvent: "devicemotion",
+        DeviceOrientationEvent: "deviceorientation",
+        DeviceProximityEvent: "deviceproximity",
+        MutationNameEvent: "DOMAttributeNameChanged DOMElementNameChanged",
+        MutationEvent: "DOMAttrModified DOMCharacterDataModified DOMNodeInserted DOMNodeInsertedIntoDocument DOMNodeRemoved DOMNodeRemovedFromDocument DOMSubtreeModified",
+        DragEvent: "drag dragend dragenter dragleave dragover dragstart drop",
+        GamepadEvent: "gamepadconnected gamepaddisconnected",
+        HashChangeEvent: "hashchange",
+        KeyboardEvent: "keydown keypress keyup",
+        MessageEvent: "message message message message",
+        PageTransitionEvent: "pagehide pageshow",
+        PopStateEvent: "popstate",
+        StorageEvent: "storage",
+        SVGEvent: "SVGAbort SVGError SVGLoad SVGResize SVGScroll SVGUnload",
+        SVGZoomEvent: "SVGZoom",
+        TouchEvent: "touchcancel touchend touchenter touchleave touchmove touchstart",
+        TransitionEvent: "transitionend",
+        WheelEvent: "wheel"
+    };
+
+    /**
+     * @private
+     */
+    private _lastId = 0;
+
+    /**
+     * @deprecated
+     * @type {{}}
+     */
+    private list = {};
+
+    public activatePrerendered( $element: JQuery, componentClass: Function, params: Object = {} ) {
+
+        this.logger.space();
+        this.logger.major('Активация компонента '+Detect.className(componentClass)+', предварительно отрендеренного сервером: ');
+
+        try {
+            $element.assignComponentToPrerendered( componentClass, params );
+        } catch ( e ) {
+            this.logger.error('Error while initializing component: '+e.message);
+            // this.logger.error('Error while initializing component <?= $_this->getRtid() ?>: '+e.message);
+            this.logger.log( e );
+        }
+
+    }
+
+    public stopComponentsInNode( node: Element ): void {
+        // TODO: а не включить ли .add(node) сюда?
+        let $components = $(node).find('.VisualComponent');
+        _.forEach($components, (component) => {
+            $(<HTMLElement>component).model().__stop();
+        } );
+    }
+
+    private renderChildren( children: Array<any> ): Promise<Array<Element>|{}> {
+
+        // let def = $.Deferred();
+        let pendingRenderingElements: any[] = [];
+        let providedChildren = [];
+
+        _.forEach(children, async childNode => {
+
+            if ( _.isString(childNode) ) {
+                pendingRenderingElements.push(document.createTextNode(childNode));
+            } else if ( childNode instanceof HTMLElement ) {
+                pendingRenderingElements.push(childNode);
+            } else if ( _.isArray(childNode) ) {
+                // а надо ли нам сразу рендерить вложенные компоненты? Ведь в компонент они будут переданы параметром,
+                // и не факт что будут использованы... Ну ладно, пока так
+
+                if (_.isElement(childNode[0])) {
+                    _.forEach(childNode, (elem) => {
+                        pendingRenderingElements.push(elem);
+                    } );
+                } else {
+                    pendingRenderingElements.push(await this.renderJsxArray(childNode));
+
+                }
+
+            } else if ( childNode instanceof VisualComponent ) {
+                pendingRenderingElements.push(await this.renderJsxArray(childNode));
+                // pendingRenderingElements.push( jsx(childNode) );
+            }
+
+        } );
+
+        return new Promise<Element[]>(async (resolve, reject) => {
+            // Promise.all(pendingRenderingElements).then((...generatedChildren) => {
+            Promise.all(pendingRenderingElements).then((generatedChildren) => {
+                resolve(<Element[]><unknown>generatedChildren);
+            });
+        });
+
+
+
+        // $.when( ...pendingRenderingElements ).done(( ...generatedChildren )=> {
+        //     def.resolve( generatedChildren );
+        // });
+
+        // return def.promise();
+
+    }
+
+    private async renderJsxFromNotVisualComponent(type: string, attributes: Object|any = {}, resolve: Function): Promise<Node> {
+
+        Promise.all(children).then((renderedChildren: Array<Element>) => {
+
+            Promise.all(type({
+                providedAttributes: attributes,
+                providedChildren: renderedChildren,
+            }).then((result) => {
+                if (_.isArray(result) === false) {
+                    return resolve( $(result).get(0) );
+                }
+
+                Promise.all(this.renderJsxArray(result)).then(rendered => {
+                    // вычисляем значение аттрибута CSS-классов
+                    if (attributes['class']) {
+                        $(rendered).addClass(attributes['class']);
+                        delete attributes['class'];
+                    }
+
+                    // вешаем указанные в аттрибутах события или же устанавливаем эти самые аттрибуты
+                    // это и для компонента, и для обычного тега
+
+                    this.applyAttributesToElement(rendered, attributes);
+                    return resolve(rendered);
+                });
+            }));
+
+        });
+
+    }
+
+    /**
+     *
+     * @param type
+     * @param attributes
+     * @param initParams
+     * @param children
+     * @param resolve
+     */
+    private async renderJsxFromVisualComponent(type: string, attributes: Object|any, initParams: Object|any, children: [], resolve: Function): Promise<Node> {
+        let generatedComponent: VisualComponent;
+
+        if (typeof type === 'function') {
+            // @ts-ignore
+            generatedComponent = <VisualComponent>new type(initParams);
+        } else if ((typeof type === 'object') && (<{}>type instanceof VisualComponent)) {
+            // если элемент - уже существующий визуальный компонент
+            generatedComponent = type;
+        } else {
+            return resolve(this.skipTag('Visual component cannot be rendered: it must me function or object'));
+        }
+
+        if (generatedComponent instanceof VisualComponent === false) {
+            throw new Error(Detect.className(type)+' poor VisualComponent generator/instance!');
+        }
+        // expect( generatedComponent instanceof VisualComponent, Detect.className(type)+' poor VisualComponent generator/instance!' );
+
+        let renderedChildren: Element[]|{} = await this.renderChildren(children);
+        let generatedElement = await generatedComponent.display({
+            providedAttributes: attributes,
+            providedChildren: renderedChildren,
+        });
+
+        // вычисляем значение аттрибута CSS-классов
+        if (attributes['class']) {
+            $(generatedElement).addClass( attributes['class'] );
+            delete attributes['class'];
+        }
+
+        // вешаем указанные в аттрибутах события или же устанавливаем эти самые аттрибуты
+        // это и для компонента, и для обычного тега
+
+        this.applyAttributesToElement(generatedElement, attributes);
+        return resolve(generatedElement);
+
+
+
+
+
+        // Promise.all(this.renderChildren(children)).then(async (renderedChildren: Array<Element>)=>{
+        //     let generatedElement = await generatedComponent.display({
+        //         providedAttributes: attributes,
+        //         providedChildren: renderedChildren,
+        //     });
+        // });
+        //
+        // $.when( le.components.renderChildren( children ) ).done(( renderedChildren: Array<Element> )=>{
+        //
+        //     $.when( generatedComponent.display({
+        //         providedAttributes: attributes,
+        //         providedChildren: renderedChildren,
+        //     }) ).done( ( generatedElement: Element ) => {
+        //
+        //         if ( attributes['class'] ) {
+        //
+        //             $(generatedElement).addClass( attributes['class'] );
+        //
+        //             delete attributes['class'];
+        //         }
+        //
+        //         le.components.applyAttributesToElement( generatedElement, attributes );
+        //         def.resolve( generatedElement );
+        //
+        //     } );
+        //
+        // });
+    }
+
+    private async specialNodeIf(attributes: Object|any, resolve: Function) {
+        if ( 'pass' in attributes && !attributes['pass'] ) {
+            return resolve(this.skipTag());
+            // return resolve( new Comment );
+        }
+
+        if ( 'not' in attributes && !!attributes['not'] ) {
+            return resolve(this.skipTag());
+            // return resolve( new Comment );
+        }
+
+        if ( !('not' in attributes || 'pass' in attributes) ) {
+            return resolve(this.skipTag('Incorrect condition in IF statement!'));
+            // this.logger.warn('Incorrect condition in IF statement!');
+            // return resolve( new Comment );
+        }
+
+        if ( 'then' in attributes ) {
+
+            // может быть полезно в тех случаях, когда генерация вложенных компонентов
+            // использует какие-то переменные, которые будут неопределены в случае,
+            // если условие, определенное в pass/not не сработает
+
+            let thenClosure = attributes['then'];
+            if (!_.isFunction(thenClosure)) {
+                return resolve(this.skipTag('Incorrect THEN attribute in IF statement!'));
+                // this.logger.warn('Incorrect THEN attribute in IF statement!');
+                // return resolve( new Comment );
+            }
+
+            let result = thenClosure();
+            let rendered = await this.renderJsxArray('component',{},result);
+
+            return resolve( rendered );
+        }
+    }
+
+    /**
+     *
+     * @param attributes
+     * @param resolve
+     * @param children
+     * @throws Error
+     */
+    private async specialNodeSwitch(attributes: Object|any, resolve: Function, children: Array<any>) {
+        let testingValue = attributes['var'];
+
+        let strictMode = false;
+        if ( 'strict' in attributes ) {
+            strictMode = !_.includes(['false',false], attributes['strict']);
+        }
+
+        let matchedCase = null;
+        let defaultCase = null;
+
+        for (let i = 0; i < children.length; i++) {
+
+            let caseChild = children[i];
+            if ( !_.isArray(caseChild) ) {
+                continue;
+            }
+
+            if ( caseChild[0] === 'default' ) {
+                defaultCase = caseChild;
+                continue;
+            }
+
+            if ( caseChild[0] != 'case' ) {
+                continue;
+            }
+
+            let childAttributes = caseChild[1];
+            if ( !('value' in childAttributes) ) {
+                continue;
+            }
+
+            if ( ( !strictMode && testingValue == childAttributes['value'] ) || ( strictMode && testingValue === childAttributes['value'] ) ) {
+                matchedCase = caseChild;
+                break;
+            }
+        }
+
+        if (matchedCase) {
+            children = [ matchedCase ];
+        } else if ( defaultCase ) {
+            children = [ defaultCase ];
+        } else {
+            throw new Error('Switch tag must have at least one child: CASE or DEFAULT');
+            // return resolve(this.skipTag());
+            // return resolve(new Comment);
+        }
+    }
+
+    private async specialNodeFor(attributes: Object|any, resolve: Function) {
+        if ( !('each' in attributes) ) {
+            return resolve(this.skipTag('Incorrect "each" attribute in FOREACH statement!'));
+            // this.logger.warn('Incorrect "each" attribute in FOREACH statement!');
+            // return resolve( new Comment );
+        }
+
+        if ( !('do' in attributes) ) {
+            return resolve(this.skipTag('Incorrect "do" attribute in FOREACH statement!'));
+            // this.logger.warn('Incorrect "do" attribute in FOREACH statement!');
+            // return resolve( new Comment );
+        }
+
+        let list = attributes['each'];
+        let func = attributes['do'];
+        let result: any[] = [];
+
+        let iterator = 1;
+        _.forEach(list,(val,key,arr)=>{
+            result.push( func(val,key,iterator,arr) );
+            iterator++;
+        });
+
+        let rendered = await this.renderJsxArray('component',{},result);
+
+        return resolve(rendered);
+    }
+
+    private skipTag(message?: string): Node {
+        if (message) {
+            this.logger.warn(message);
+        }
+
+        return new Comment;
+    }
+
+    /**
+     *
+     * @param type
+     * @param attributes
+     * @param children
+     * @param resolve
+     */
+    private async renderJsxFromString(type: string, attributes: Object|any, children: any[], resolve: Function): Promise<any> {
+
+        // специальные теги
+
+        if ( type == 'for' ) {
+            return this.specialNodeFor(attributes, resolve);
+
+            // if ( !('each' in attributes) ) {
+            //     this.logger.warn('Incorrect "each" attribute in FOREACH statement!');
+            //     return resolve( new Comment );
+            // }
+            //
+            // if ( !('do' in attributes) ) {
+            //     this.logger.warn('Incorrect "do" attribute in FOREACH statement!');
+            //     return resolve( new Comment );
+            // }
+            //
+            // let list = attributes['each'];
+            // let func = attributes['do'];
+            // let result: any[] = [];
+            //
+            // let iterator = 1;
+            // _.forEach(list,(val,key,arr)=>{
+            //     result.push( func(val,key,iterator,arr) );
+            //     iterator++;
+            // });
+            //
+            // let rendered = await this.renderJsxArray('component',{},result);
+            //
+            // return resolve(rendered);
+        }
+
+        if ( type == 'if' ) {
+
+            return this.specialNodeIf(attributes, resolve);
+
+            /*
+            if ( 'pass' in attributes && !attributes['pass'] ) {
+                return resolve( new Comment );
+            }
+
+            if ( 'not' in attributes && !!attributes['not'] ) {
+                return resolve( new Comment );
+            }
+
+            if ( !('not' in attributes || 'pass' in attributes) ) {
+                this.logger.warn('Incorrect condition in IF statement!');
+                return resolve( new Comment );
+            }
+
+            if ( 'then' in attributes ) {
+
+                // может быть полезно в тех случаях, когда генерация вложенных компонентов
+                // использует какие-то переменные, которые будут неопределены в случае,
+                // если условие, определенное в pass/not не сработает
+
+                let thenClosure = attributes['then'];
+                if (!_.isFunction(thenClosure)) {
+                    this.logger.warn('Incorrect THEN attribute in IF statement!');
+                    return resolve( new Comment );
+                }
+
+                let result = thenClosure();
+                let rendered = await this.renderJsxArray('component',{},result);
+
+                return resolve( rendered );
+            }
+            */
+
+        }
+
+        if ( type == 'switch' ) {
+            // return this.specialNodeSwitch(attributes, resolve, children);
+            try {
+                this.specialNodeSwitch(attributes, resolve, children);
+            } catch (e) {
+                return resolve(this.skipTag());
+            }
+
+
+            // let testingValue = attributes['var'];
+            //
+            // let strictMode = false;
+            // if ( 'strict' in attributes ) {
+            //     strictMode = !_.includes(['false',false], attributes['strict']);
+            // }
+            //
+            // let matchedCase = null;
+            // let defaultCase = null;
+            //
+            // for (let i = 0; i < children.length; i++) {
+            //
+            //     let caseChild = children[i];
+            //     if ( !_.isArray(caseChild) ) continue;
+            //
+            //     if ( caseChild[0] === 'default' ) {
+            //         defaultCase = caseChild;
+            //         continue;
+            //     }
+            //
+            //     if ( caseChild[0] != 'case' ) continue;
+            //     let childAttributes = caseChild[1];
+            //     if ( !('value' in childAttributes) ) continue;
+            //     if ( ( !strictMode && testingValue == childAttributes['value'] ) || ( strictMode && testingValue === childAttributes['value'] ) ) {
+            //         matchedCase = caseChild;
+            //         break;
+            //     }
+            // }
+            //
+            // if (matchedCase) {
+            //     children = [ matchedCase ];
+            // } else if ( defaultCase ) {
+            //     children = [ defaultCase ];
+            // } else {
+            //     return resolve(new Comment);
+            // }
+
+        }
+
+        // если элемент - обычный тег, то привязывать компонент к нему не надо
+        let generatedElement = document.createElement(type);
+        this.applyAttributesToElement( generatedElement, attributes );
+
+        let renderedChildren = await this.renderChildren(children);
+        _.forEach(renderedChildren, (renderedChild: Element) => {
+
+            if (renderedChild instanceof Text)
+                generatedElement.appendChild(renderedChild);
+            else if ( renderedChild instanceof Element ) {
+
+                switch (renderedChild.tagName) {
+
+                    case 'COMPONENT':
+                    case 'FOREACH': // todo: for?
+                    case 'SWITCH':
+                    case 'DEFAULT':
+                    case 'CASE':
+                    case 'IF':
+                    // todo: for?
+
+                        // debugger;
+
+                        _.forEach($(renderedChild).contents(),(ifChildNode)=>{
+                            if ( ifChildNode instanceof Node ) {
+                                generatedElement.appendChild(ifChildNode);
+                            } else {
+                                $(generatedElement).append(ifChildNode);
+                            }
+                        });
+
+                        break;
+
+                    default:
+                        generatedElement.appendChild(renderedChild);
+                }
+
+            }
+
+            return resolve(generatedElement);
+
+        });
+
+    }
+
+    public async renderJsxArray( type: any, config: Object = {}, ...children: Array<any>): Promise<Node|{}> {
+
+        // если передан один параметр и он массив, то вытаскиваем параметры (игнорируя config и children)
+        if ( _.isArray(type) ) {
+
+            let tempParams = _.clone(type);
+            if ( _.isArray(tempParams[0]) ) {
+                type = 'component'; // TEMP!!!
+                config = {};
+                children = tempParams;
+            } else {
+                type = tempParams.shift();
+                config = tempParams.shift();
+                children = tempParams;
+            }
+
+            // delete(tempParams);
+            // tempParams = undefined;
+
+        }
+
+        return new Promise<Node>(async (resolve, reject) => {
+
+            if (_.isUndefined(type)) {
+                return resolve(new Comment);
+            }
+
+            if (type instanceof HTMLElement || type instanceof Text) {
+                return resolve(type);
+            }
+
+            let attributes: Object|any = config || {};
+            let generatedElement: HTMLElement;
+
+            if ( _.isString(type) ) {
+                return await this.renderJsxFromString(type, attributes, children, resolve);
+            } else {
+
+                let initParams = {};
+                if ( attributes['config'] ) {
+                    initParams = attributes['config'];
+                    delete attributes['config'];
+                }
+
+                if (!Detect.isVisualComponent(type)) {
+                    return this.renderJsxFromNotVisualComponent(type, attributes, resolve);
+                } else {
+                    return this.renderJsxFromVisualComponent(type, attributes, initParams, resolve);
+                }
+
+            }
+
+
+        });
+
+        // TODO: сохранять в generatedElement.meta type, config?
+    }
+
+    private applyAttributesToElement( element: Element, attributes: Object ): void {
+
+        _.forEach( attributes, ( value, attribute: string ) => {
+
+            if ( _.startsWith(attribute,'on') ) { // а если аттрибут типа onetwo = '123'?
+
+                $(element).off(attribute.substring(2)); // снимаем существующий обработчик, если был
+                $(element).on( attribute.substring(2), <EventListener>value );
+
+            } else {
+                if ( _.startsWith(attribute,'data-') && _.isObjectLike(value) ) {
+                    element.setAttribute(attribute, JSON.stringify(value)); // а если еще раз вызвать, перезапишет?
+                } else {
+                    element.setAttribute(attribute, value); // а если еще раз вызвать, перезапишет?
+                }
+
+            }
+
+        });
+
+    }
+
+    /**
+     * Генерирует следующий по счету ID для нового визуального компонента
+     * @returns {number}
+     */
+    public nextId() {
+        //debugger;
+        this._lastId++;
+        return this._lastId;
+    }
+
+    /**
+     * Связывает между собой HTML-элемент и модель визуального компонента
+     * @param element
+     * @param model
+     */
+    public tie( element: Element, model: VisualComponent ) {
+        model.setElement( element );
+        element.model = model;
+    }
+
+    /**
+     * @deprecated
+     * @param componentId
+     * @param componentData
+     */
+    public register( componentId, componentData ){
+        this.list[componentId] = componentData;
+    }
+
+}

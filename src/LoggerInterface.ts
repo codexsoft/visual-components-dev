@@ -13,6 +13,6 @@ export default interface LoggerInterface {
     group(message: string, collapsed?: boolean): void;
     close(): void;
     clean(): void;
-    minor(message: string): void;
+    minor(message: string|any): void;
     space(): void;
 }

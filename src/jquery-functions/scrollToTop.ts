@@ -5,7 +5,7 @@ interface JQuery {
 /**
  * Довольно специфичный хардкод. Использовался в avarkom.center
  */
-$.fn.scrollToTop = function(){
+$.fn.scrollToTop = function(this: JQuery) {
 
     $(this).hide().removeAttr("href");
     if( $(window).scrollTop() != 0 ){
@@ -23,8 +23,8 @@ $.fn.scrollToTop = function(){
     });
 
     // нажатие на кнопку наверх
-    $(this).click(function(){
-        $("html, body").animate({scrollTop:0},"slow");
+    $(this).click(function() {
+        $("html, body").animate({scrollTop:0}, 'slow');
     });
 
 };

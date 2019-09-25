@@ -24,21 +24,23 @@ declare global {
  * Доступ к модели визуального компонента через элемент
  * @returns {(()=>VisualComponent)|VisualComponent}
  */
-$.fn.model = function(): VisualComponent {
+$.fn.model = function(this: JQuery): VisualComponent {
 
     // let dummyComponent = new DummyVisualComponent;
 
     if ( !this.length ) {
-        le.console.error('Empty JQuery set while accessing to component model');
-        return new DummyVisualComponent;
+        throw new Error('Empty JQuery set while accessing to component model');
+        // le.console.error('Empty JQuery set while accessing to component model');
+        // return new DummyVisualComponent;
     }
 
     let _self = this.get(0);
 
     if ( !('model' in _self) || _.isUndefined(_self.model) ) {
-        debugger;
-        le.console.error('Failed accessing to component model');
-        return new DummyVisualComponent;
+        throw new Error('Failed accessing to component model');
+        // debugger;
+        // le.console.error('Failed accessing to component model');
+        // return new DummyVisualComponent;
     }
 
     return _self.model;
