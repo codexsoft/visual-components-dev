@@ -157,4 +157,36 @@ export default class Components {
 
     }
 
+    /**
+     * @WARE!
+     * @returns {string}
+     */
+    public static backendUrl(component: VisualComponent) {
+        return Components.settings.urlToRoot+'src/components/'+component.getClass()+'/';
+    }
+
+    /**
+     *
+     * @param component
+     * @param fileName
+     */
+    public static cssUrl(component: VisualComponent, fileName: string): string {
+        return 'url("' + Components.backendUrl(component) + fileName + '")';
+    }
+
+    /**
+     * Получить URL к изображению
+     * @param component
+     * @param image
+     * @returns {string}
+     */
+    public static imageUrl(component: VisualComponent, image: string): string {
+        return Components.backendUrl(component)+'images/'+image;
+    }
+
+    protected url(): string {
+        return Components.settings.urlToRoot + this.selfUrl;
+        // protected selfUrl: string = '';
+    }
+
 }

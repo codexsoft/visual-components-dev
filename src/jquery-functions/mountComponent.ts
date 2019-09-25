@@ -37,7 +37,7 @@ $.fn.mountComponent = async function(this: JQuery, component: VisualComponent, o
 
     return new Promise<Element>(async (resolve: Function, reject: Function) => {
 
-        let rendered = await component.display();
+        let rendered = await component.displayUniversal();
 
         switch( mode ) {
 

@@ -101,7 +101,7 @@ export default class JsxArray {
 
         // если элемент - обычный тег, то привязывать компонент к нему не надо
         let generatedElement = document.createElement(this.type);
-        this.applyAttributesToElement( generatedElement, this.attributes );
+        this.applyAttributesToElement(generatedElement, this.attributes);
 
         let renderedChildren = await this.renderChildren(this.children);
         _.forEach(renderedChildren, (renderedChild: Element) => {
@@ -144,7 +144,11 @@ export default class JsxArray {
 
     }
 
-    private applyAttributesToElement( element: Element, attributes: Object ): void {
+    private applyAttributesToElement(element: Element|CharacterData, attributes: Object): void {
+
+        if (!_.isElement(element)) {
+            return;
+        }
 
         _.forEach( attributes, (value, attribute: string) => {
 
@@ -152,9 +156,9 @@ export default class JsxArray {
                 $(element).off(attribute.substring(2)); // снимаем существующий обработчик, если был
                 $(element).on( attribute.substring(2), <EventListener>value );
             } else if ( _.startsWith(attribute,'data-') && _.isObjectLike(value) ) {
-                element.setAttribute(attribute, JSON.stringify(value)); // а если еще раз вызвать, перезапишет?
+                (<Element>element).setAttribute(attribute, JSON.stringify(value)); // а если еще раз вызвать, перезапишет?
             } else {
-                element.setAttribute(attribute, value.toString()); // а если еще раз вызвать, перезапишет?
+                (<Element>element).setAttribute(attribute, value.toString()); // а если еще раз вызвать, перезапишет?
             }
 
         });
@@ -270,20 +274,50 @@ export default class JsxArray {
         }
     }
 
-    private async renderJsxFromNotVisualComponent(): Promise<Node> {
+    private async renderJsxFromNotVisualComponent(): Promise<Element> {
 
-        Promise.all(this.renderChildren(this.children)).then((renderedChildren: Array<Element>) => {
+        return new Promise<Element>(async () => {
 
-            Promise.all(this.type({
+            let renderedChildren = await this.renderChildren(this.children);
+            let result = this.type({
+                providedAttributes: this.attributes,
+                providedChildren: renderedChildren,
+            });
+
+            if (_.isArray(result) === false) {
+                return this.resolve($(result).get(0));
+            }
+
+            let rendered: HTMLElement = await (new JsxArray(result)).render();
+
+            // вычисляем значение аттрибута CSS-классов
+            if (this.attributes['class']) {
+                $(rendered).addClass(this.attributes['class']);
+                delete this.attributes['class'];
+            }
+
+            // вешаем указанные в аттрибутах события или же устанавливаем эти самые аттрибуты
+            // это и для компонента, и для обычного тега
+
+            this.applyAttributesToElement(rendered, this.attributes);
+            return this.resolve(rendered);
+
+        });
+
+
+
+
+            /*
+            await Promise.all(this.type({
                 providedAttributes: this.attributes,
                 providedChildren: renderedChildren,
             }).then(async (result: any) => {
 
                 if (_.isArray(result) === false) {
-                    return this.resolve( $(result).get(0) );
+                    return this.resolve($(result).get(0));
                 }
 
-                let rendered: any = await (new JsxArray(result)).render();
+                let rendered: HTMLElement = await (new JsxArray(result)).render();
 
                 // вычисляем значение аттрибута CSS-классов
                 if (this.attributes['class']) {
@@ -296,27 +330,38 @@ export default class JsxArray {
 
                 this.applyAttributesToElement(rendered, this.attributes);
                 return this.resolve(rendered);
-
-                /*
-                Promise.all((new JsxArray(result)).render()).then((rendered: any) => {
-                    // вычисляем значение аттрибута CSS-классов
-                    if (this.attributes['class']) {
-                        $(rendered).addClass(this.attributes['class']);
-                        delete this.attributes['class'];
-                    }
-
-                    // вешаем указанные в аттрибутах события или же устанавливаем эти самые аттрибуты
-                    // это и для компонента, и для обычного тега
-
-                    this.applyAttributesToElement(rendered, this.attributes);
-                    return this.resolve(rendered);
-                });
-                */
-
             }));
 
         });
 
+        return Promise.all<Element>(await this.renderChildren(this.children)).then((renderedChildren: Element[]) => {
+
+            Promise.all(this.type({
+                providedAttributes: this.attributes,
+                providedChildren: renderedChildren,
+            }).then(async (result: any) => {
+
+                if (_.isArray(result) === false) {
+                    return this.resolve( $(result).get(0) );
+                }
+
+                let rendered: HTMLElement = await (new JsxArray(result)).render();
+
+                // вычисляем значение аттрибута CSS-классов
+                if (this.attributes['class']) {
+                    $(rendered).addClass(this.attributes['class']);
+                    delete this.attributes['class'];
+                }
+
+                // вешаем указанные в аттрибутах события или же устанавливаем эти самые аттрибуты
+                // это и для компонента, и для обычного тега
+
+                this.applyAttributesToElement(rendered, this.attributes);
+                return this.resolve(rendered);
+            }));
+
+        });
+        */
     }
 
     /**
@@ -335,16 +380,16 @@ export default class JsxArray {
             return this.resolve(this.skipTag('Visual component cannot be rendered: it must me function or object'));
         }
 
+        // noinspection SuspiciousTypeOfGuard,PointlessBooleanExpressionJS
         if (generatedComponent instanceof VisualComponent === false) {
             throw new Error(Detect.className(this.type)+' poor VisualComponent generator/instance!');
         }
         // expect( generatedComponent instanceof VisualComponent, Detect.className(type)+' poor VisualComponent generator/instance!' );
 
-        let renderedChildren: Element[]|{} = await this.renderChildren(this.children);
-        let generatedElement = await generatedComponent.display({
+        let renderedChildren: Element[] = await this.renderChildren(this.children);
+        let generatedElement = await generatedComponent.displayUniversal({
             providedAttributes: this.attributes,
-            providedChildren: renderedChildren,
-            displayWithContainer: false
+            providedChildren: renderedChildren
         });
 
         // вычисляем значение аттрибута CSS-классов
@@ -361,7 +406,8 @@ export default class JsxArray {
         return this.resolve(generatedElement);
     }
 
-    private renderChildren(children: any[]): Promise<Element[]>|Iterable<Element> {
+    // private renderChildren(children: any[]): Promise<Element[]>|Iterable<Element> {
+    private renderChildren(children: any[]): Promise<Element[]> {
 
         let pendingRenderingElements: any[] = [];
         let providedChildren = [];
@@ -381,13 +427,13 @@ export default class JsxArray {
                         pendingRenderingElements.push(elem);
                     } );
                 } else {
-                    pendingRenderingElements.push(await (new JsxArray(childNode).render()));
+                    pendingRenderingElements.push((new JsxArray(childNode).render()));
                     // pendingRenderingElements.push(await this.renderJsxArray(childNode));
 
                 }
 
             } else if (childNode instanceof VisualComponent) {
-                pendingRenderingElements.push(await (new JsxArray(childNode).render()));
+                pendingRenderingElements.push((new JsxArray(childNode).render()));
                 // pendingRenderingElements.push(await this.renderJsxArray(childNode));
                 // pendingRenderingElements.push( jsx(childNode) );
             }

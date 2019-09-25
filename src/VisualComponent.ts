@@ -13,7 +13,6 @@ import Detect from "./Detect";
 import JsxArray from "./JsxArray";
 import VisualComponentDisplayOptionsInterface from "./VisualComponentDisplayOptionsInterface";
 import expect from "./shortcut-functions/expect";
-import {use} from "./../node_modules/typescript-mix/dist/index";
 
 export default abstract class VisualComponent {
 
@@ -24,10 +23,6 @@ export default abstract class VisualComponent {
 
     protected logger: LoggerInterface = new NullLogger();
 
-    protected props: {
-        config?: Object;
-    };
-
     /**
      * if true, then no DIV.VisualComponent wrapper generated, used for form fields generating
      * @type {boolean}
@@ -35,17 +30,15 @@ export default abstract class VisualComponent {
     protected displayWithoutContainer: boolean = false;
 
     static LAYOUT_DEFAULT = 'default';
-    protected _path: string;
-    protected USE_WARE = false;
 
-    private __cachedDetectedClassname: string = null;
+    private __cachedDetectedClassname: string|null = null;
 
     protected layout: string = VisualComponent.LAYOUT_DEFAULT;
 
     /**
      * DOM-элемент, с которым связана модель этого визуального компонента
      */
-    private _element: Element|undefined = undefined;
+    private _element: HTMLElement|undefined = undefined;
 
     /**
      * какие события мыши терминировать по умолчанию в этом компоненте?
@@ -59,14 +52,12 @@ export default abstract class VisualComponent {
      */
     protected id: number;
 
-    protected selfUrl: string = '';
-
-    private _jsxProvidedAttributes: Object = {};
+    private _jsxProvidedAttributes: {} = {};
 
     /**
      * used while rendering
      */
-    private _jsxProvidedChildren: Array<any>;
+    private _jsxProvidedChildren: any[] = [];
 
     constructor( parameters: {
         id?: number
@@ -109,10 +100,10 @@ export default abstract class VisualComponent {
                     '_jsxProvidedAttributes',
                     '_element',
                     '__cachedDetectedClassname',
-                    'USE_WARE',
+                    // 'USE_WARE',
                     'TERMINATE_EVENTS',
-                    'props',
-                    'selfUrl',
+                    // 'props',
+                    // 'selfUrl',
                     'layout',
                 ], key)) return;
             exportObj[key] = value;
@@ -150,7 +141,7 @@ export default abstract class VisualComponent {
     }
 
 
-    protected jsxProvidedChildren(): Array<any> {
+    protected jsxProvidedChildren(): any[] {
         return this._jsxProvidedChildren;
     }
 
@@ -171,6 +162,7 @@ export default abstract class VisualComponent {
         return <number>this.id;
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Инсталлирует компонент внутрь указанного элемента
      * @param element
@@ -184,6 +176,7 @@ export default abstract class VisualComponent {
         });
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      * Инсталлирует компонент внутрь указанного элемента
      * @param element
@@ -204,69 +197,6 @@ export default abstract class VisualComponent {
 
         // return <Promise<VisualComponent>> def.promise();
 
-    }
-
-    /**
-     * Получить URL к изображению
-     * @param image
-     * @returns {string}
-     */
-    protected imageUrl( image: string ): string {
-        return this.backendUrl()+'images/'+image;
-    }
-
-    /**
-     * experimental! TODO: write code
-     * @param signalName
-     * @param callback
-     * @returns {VisualComponent}
-     * @deprecated
-     */
-    protected onSignal( signalName: string, callback: Function ) {
-        return this;
-    }
-
-    /**
-     * experimental! TODO: write code
-     * @param eventName
-     * @param callback
-     * @deprecated
-     * @returns {VisualComponent}
-     */
-    protected onEvent( eventName: string, callback: Function ) {
-        return this;
-    }
-
-    /**
-     * experimental! TODO: write code
-     * @param combo
-     * @param callback
-     * @returns {VisualComponent}
-     * @deprecated
-     */
-    protected onKey( combo: string, callback: Function ) {
-        return this;
-    }
-
-    protected interact( component: VisualComponent, title: string = '' ): Promise<any> {
-        let process = $.Deferred();
-        this.openModal({
-            title: title,
-            content: component,
-            terminators: {
-                // целевое событие - сигнал done
-                done: (s: Signal) => {
-                    return process.resolve( s.data );
-                },
-            },
-            signals: {
-                // при отмене (закрытие диалогового окна) формируем reject
-                cancelled: (s: Signal) => {
-                    return process.reject( s.data );
-                },
-            }
-        });
-        return process.promise();
     }
 
     /**
@@ -294,22 +224,6 @@ export default abstract class VisualComponent {
             .fire(handlers, <[]>_.keys(signalTerminators));
 
         return modalComponent;
-
-    }
-
-    /**
-     * Может терминирующие сигналы просто перечислять?
-     * @param modalComponent
-     * @param subComponent
-     * @param signalHandlers
-     * @deprecated
-     */
-    protected modal(modalComponent: Common__Modal, subComponent: VisualComponent, signalHandlers: Object = {} ) {
-
-        modalComponent
-            .setParentComponent(this)
-            .setComponent( subComponent )
-            .fire( signalHandlers );
 
     }
 
@@ -353,15 +267,10 @@ export default abstract class VisualComponent {
         this.logger.major('Обновление контента компонента '+id+' и реактивация!');
 
         // TODO: replace может разрушить связь с переменными, указывающими на прежний элемент
-        this.$element().replaceWith( content );
+        this.$element().replaceWith(content);
 
         // заставляем сработать скрипты инициализации и активации компонентов, которые в контенте
         $(document).triggerEvent('ready');
-
-    }
-
-    protected url(): string {
-        return le.ware.settings.urlToRoot + this.selfUrl;
     }
 
     /**
@@ -370,27 +279,27 @@ export default abstract class VisualComponent {
      * А то это жесткая привязка к модулю keypress
      */
     protected setFocus(): void {
-        Components.keyboard.focusOn( this );
+        Components.keyboard.focusOn(this);
     }
 
     /**
      * снять фокусировку keypress с этого компонента
      */
     protected unfocus(): void {
-        Components.keyboard.unfocus( this );
+        Components.keyboard.unfocus(this);
     }
 
     protected killViewport(): void {
         this._element = undefined;
     }
 
-    public setElement( domElement: Element ): void {
-        if ( _.isElement( domElement ) ) {
+    public setElement(domElement: HTMLElement): void {
+        if (_.isElement(domElement)) {
             this._element = domElement;
         }
     }
 
-    protected getClass(): string {
+    public getClass(): string {
         // __CLASS__ from typescript-magic-variable-plugin can be used instead
         if (!this.__cachedDetectedClassname) {
             this.__cachedDetectedClassname = Detect.className(this);
@@ -417,18 +326,6 @@ export default abstract class VisualComponent {
         return staticClass ? staticClass : false;
     }
 
-    /**
-     * @WARE!
-     * @returns {string}
-     */
-    protected backendUrl() {
-        return Components.settings.urlToRoot+'src/components/'+this.getClass()+'/';
-    }
-
-    protected cssUrl(fileName: string): string {
-        return 'url("' + this.backendUrl() + fileName + '")';
-    }
-
     private __startListenEvents() {
 
         if ( this.TERMINATE_EVENTS ) {
@@ -451,9 +348,10 @@ export default abstract class VisualComponent {
             return;
         }
 
-        $.each( eventHandlers, (eventName: string, handler: Function) => {
+        $.each(eventHandlers, (eventName: string, handler: Function) => {
             this.logger.minor( '[ BIND EVENTS ] Регистрация обработчика события: ' + eventName );
             this.$element().off(eventName); // снимаем существующий обработчик, если был
+            // @ts-ignore
             this.$element().on(eventName, handler);
         } );
 
@@ -634,16 +532,22 @@ export default abstract class VisualComponent {
         return $container.get(0);
     }
 
-    public async displayUniversal(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element> {
+    // noinspection JSMethodCanBeStatic
+    private elementIsJsxWrapper(element: Node): boolean {
+        // @ts-ignore
+        return (element.tagName !== undefined) && (_.includes(['COMPONENT'], element.tagName));
+    }
+
+    public async displayUniversal(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element|Comment> {
         this.importDisplayVars(options);
         let beforeRenderResult: any = await this.beforeRender();
-        let content: any = await this.render(beforeRenderResult);
+        let content: any[]|string = await this.render(beforeRenderResult);
 
-        return new Promise<Element>(async (resolve: Function, reject: Function) => {
+        return new Promise<Element|Comment>(async (resolve: Function, reject: Function) => {
 
-            if ( _.isArray( content ) ) { // JSX array-based render
+            if (_.isArray(content)) { // JSX array-based render
 
-                let resultElement: HTMLElement = await (new JsxArray(content)).render();
+                let resultElement: Element = await (new JsxArray(<any[]>content)).render();
 
                 if (this.displayWithoutContainer) {
                     // simple case, used for components like form elements
@@ -653,23 +557,21 @@ export default abstract class VisualComponent {
                     let container = this.createContainerElement();
 
                     // we must unwrap elements, if they are in container <COMPONENT> (JSX must be just ONE element!)
-                    if ( _.includes(['COMPONENT'], resultElement.tagName) && $(resultElement).contents().length) {
+                    if (this.elementIsJsxWrapper(resultElement) && $(resultElement).contents().length) {
                         // может быть аттрибуты DIV копировать?..
 
-                        // we must also unwrap child COMPONENT element
+                        // we must also unwrap single child COMPONENT element if it exists (todo: really?)
                         let contents = $(resultElement).contents();
                         if (contents.length === 1) {
-                            let firstElement: {
-                                tagName?: string
-                            } = contents.first().get(0);
-                            if (firstElement.tagName !== undefined && firstElement.tagName == 'COMPONENT') {
-                                resultElement = firstElement;
+                            let firstElement = contents.get(0);
+                            if (this.elementIsJsxWrapper(firstElement)) {
+                                resultElement = <Element>firstElement;
                             }
                         }
 
                         $(resultElement).contents().each( function() {
                             $(container).append(this);
-                        } );
+                        });
 
                     } else {
                         $(container).append(resultElement);
@@ -685,152 +587,35 @@ export default abstract class VisualComponent {
                 return;
             }
 
-            if ( _.isElement( content ) ) {
-
-                // вообще это редкий случай. такое возможно, если render сделан как JSX, который не массив возвращает
-                this.logger.notice('not implemented!');
-                resolve(new Comment);
-
-            } else if ( _.isString( content ) ) {
-
-                // это может быть backend-рендеринг или шаблонный JST-рендер
-                // string содержит только внутренний контент
-                // что если у компонента уже есть отрисованный контейнер? Все равно новый создаем?..
+            /**
+             * это может быть backend-рендеринг или шаблонный JST-рендер
+             * string содержит только внутренний контент
+             * что если у компонента уже есть отрисованный контейнер? Все равно новый создаем?..
+             */
+            if (typeof content === 'string') {
 
                 let container = this.createContainerElement();
                 $(container).html(content);
-
                 Components.tie(container, this);
-                await this.__start(); // опции?
+                await this.__start();
 
-                resolve( container );
+                resolve(container);
             }
-        });
-    }
 
-    /**
-     * todo: should be implemented in a single method display...
-     * @param options
-     */
-    public async displaySimple(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element> {
-
-        this.logger.notice('displaying simple...');
-        this.importDisplayVars(options);
-        let beforeRenderResult: any = await this.beforeRender();
-        let content: any = await this.render(beforeRenderResult);
-
-        return new Promise(async (resolve: Function, reject: Function) => {
-
+            // это редкий случай. такое возможно, если render сделан как JSX, который не массив возвращает
             if (_.isElement(content)) {
-
-                // вообще это редкий случай. такое возможно, если render сделан как JSX, который не массив возвращает
                 this.logger.notice('not implemented!');
-                resolve(new Comment);
-
-            } else if (_.isArray(content)) { // JSX array-based render
-
-                let resultElement: Element = await (new JsxArray(content)).render();
-                Components.tie(resultElement, this);
-                this.activate();
-                resolve(resultElement);
-
-            } else if ( _.isString( content ) ) {
-
-                this.logger.notice('content cannot be string!');
-
-                // это может быть backend-рендеринг или шаблонный JST-рендер
-                // string содержит только внутренний контент
-                // что если у компонента уже есть отрисованный контейнер? Все равно новый создаем?..
-                resolve(new Comment);
             }
 
-        });
+            resolve(new Comment);
 
+        });
     }
 
     private importDisplayVars(options: VisualComponentDisplayOptionsInterface): void {
         this._jsxProvidedChildren = options.providedChildren || [];
-        this.props = this._jsxProvidedAttributes = options.providedAttributes || {};
+        this._jsxProvidedAttributes = options.providedAttributes || {};
     }
-
-    /**
-     * Deferred-Полифил для разных способов рендеринга визуального компонента
-     */
-    public async display(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element> {
-
-        if ( this.displayWithoutContainer ) {
-            return this.displaySimple(options);
-        }
-
-        this.importDisplayVars(options);
-        let beforeRenderResult: any = await this.beforeRender();
-        let content: any = await this.render(beforeRenderResult);
-
-        return new Promise<Element>(async (resolve: Function, reject: Function) => {
-            if ( _.isElement( content ) ) {
-
-                // вообще это редкий случай. такое возможно, если render сделан как JSX, который не массив возвращает
-                this.logger.notice('not implemented!');
-
-            } else if ( _.isArray( content ) ) { // JSX array-based render
-
-                let resultElement: Element = await (new JsxArray(content)).render();
-                let container = this.createContainerElement();
-                if ( _.includes(['COMPONENT'], resultElement.tagName) && $(resultElement).contents().length) {
-                    // может быть аттрибуты DIV копировать?..
-
-                    let contents = $(resultElement).contents();
-                    if (contents.length == 1) {
-                        let firstElement: {
-                            tagName?: string
-                        } = contents.first().get(0);
-                        if (firstElement.tagName !== undefined && firstElement.tagName == 'COMPONENT') {
-                            resultElement = firstElement;
-                        }
-                    }
-                    // while (contents.length == 1 && contents.first().get(0).tagName == 'COMPONENT' ) {
-                    //     resultElement = $(resultElement).contents().first().get(0);
-                    // }
-
-                    $(resultElement).contents().each( function() {
-                        $(container).append(this);
-                    } );
-
-                } else {
-                    $(container).append(resultElement);
-                }
-
-                Components.tie( container, this );
-                await this.__start(); // опции?
-
-                resolve( container );
-
-            } else if ( _.isString( content ) ) {
-
-                // это может быть backend-рендеринг или шаблонный JST-рендер
-                // string содержит только внутренний контент
-                // что если у компонента уже есть отрисованный контейнер? Все равно новый создаем?..
-
-                let container = this.createContainerElement();
-                $(container).html(content);
-
-                Components.tie(container, this);
-                await this.__start(); // опции?
-
-                resolve( container );
-            }
-        });
-
-        /**
-         * Что может происходить?
-         * 1. Компонент сразу все отрендерит и отдаст, например, string
-         * 2. Компонент, чтобы отрендерить контент, будет куда-то еще асинхронно обращаться
-         * и тогда вернет он promise
-         * 3. Компонент вернет МАССИВ, который был сгенерирован из JSX
-         */
-
-    }
-
 
     //noinspection JSMethodCanBeStatic
     /**
@@ -844,16 +629,19 @@ export default abstract class VisualComponent {
         return;
     }
 
-    public render(params?: {[index: string]: any}): Promise<any>|string {
+    public abstract render(params?: {[index: string]: any}): Promise<any[]|string>|any[]|string;
+    /*
+    public render(params?: {[index: string]: any}): Promise<any[]|string>|any[]|string {
         // by default, rendering via backend...
         return this.renderViaBackend();
     }
+    */
 
     /**
      * Shortcut для доступа к элементу компонента, обернутому в JQuery
      * @returns JQuery
      */
-    $element(): JQuery<Element> {
+    $element(): JQuery<HTMLElement> {
         if (this._element) {
             return $(this._element);
         }
@@ -908,6 +696,8 @@ export default abstract class VisualComponent {
 
     /**
      * Отправить сигнал на обработку вышестоящим визуальным компонентам
+     * Бросить сигнал вверх для дальнейшей обработки родительскими компонентами
+     * Может быть использован для того, чтобы выполнить какие-то действия перед проксированием
      */
     public _signalBubble( signal: Signal ) {
 
@@ -937,89 +727,8 @@ export default abstract class VisualComponent {
         return this.renderJsTemplate(layoutName, parameters);
     }
 
-    /**
-     * Отрисовка компонента через сервер
-     * TODO: это же просто проксирует renderByBackendStaticAsynchronous?.. А зачем?
-     * @param layoutName
-     * @param parameters
-     * @returns {Promise<T>}
-     */
-    protected renderViaBackend(layoutName = 'default', parameters: Object = {}): Promise<any> {
-
-        return new Promise<string>(async (resolve, reject) => {
-            let result: string = await this.renderByBackendStaticAsynchronous( layoutName, parameters )
-            resolve(result);
-        });
-
-
-        // todo: как бы брать параметры автоматом?
-    }
-
-    /**
-     * TODO: Отправляем запрос на сервер, чтобы получить отрендеренный компонент
-     * @returns {string}
-     */
-    protected renderByBackendStaticAsynchronous(layout: string = VisualComponent.LAYOUT_DEFAULT, parameters: Object = {} ): Promise<string> {
-
-        this.logger.log('Rendering layout '+layout+' of component '+this.debugName()+' by backend...');
-
-        let data = {
-
-            // если используем существующий бэкенд
-            rtid: this.rtid, // если обращаемся к существующему процессу
-
-            // в обоих ситуациях
-            layout: layout, // какой шаблон использовать для отрисовки?
-
-            // если создаем новый бэкенд
-            className: this.getClass(), // какого класс нужно использовать для создания бэкенда?
-            initialParameters: parameters, // параметры для создания
-            createPersistant: false, // создавать бэкенд на время сессии или одноразово?
-
-        };
-
-        return new Promise<string>(async (resolve, reject) => {
-
-        });
-
-        // let process = $.Deferred();
-
-
-        // debugger;
-
-
-
-        le.backend.wareRequest( 'LE_COMPONENT_RENDER_LAYOUT', data )
-            .done( ( result: OperationResult ) => {
-
-                // debugger;
-
-                if ( _.isObject(result.content) ) {
-                    this.rtid = result.content.rtid;
-                    process.resolve( result.content.rendered );
-                } else {
-                    process.resolve( result.content );
-                }
-
-            } )
-            .fail( () => {
-                // debugger;
-                process.resolve( '<div style="text-align: center;">Ошибка отрисовки на стороне сервера!<hr /><button onclick="$(this).triggerEvent(\'cancel\')">Закрыть</button></div>' );
-            } )
-        ;
-
-        // TODO: передаваемые параметры - они для конструирования компонента или для передачи в layout???
-
-        return <Promise<string>> process.promise();
-
-    }
-
     protected refreshViewport() {
         this.switchLayoutTo( this.layout );
-    }
-
-    public reRenderPublic() {
-        this.reRender();
     }
 
     protected reRender() {
@@ -1074,10 +783,6 @@ export default abstract class VisualComponent {
 
     }
 
-    public signalPublic( name, data: Object = {} ): boolean {
-        return this.signal( name, data );
-    }
-
     /**
      * Сгенерировать сигнал
      * TODO: может сделать третий параметр callback - чтобы вызывать его
@@ -1095,15 +800,6 @@ export default abstract class VisualComponent {
 
         // для удобства в использовании при конвертации события в сигнал и прекращения обработки события
         return false;
-    }
-
-    /**
-     * Бросить сигнал вверх для дальнейшей обработки родительскими компонентами
-     * Может быть использован для того, чтобы выполнить какие-то действия перед проксированием
-     * @param signal
-     */
-    protected signalProxy( signal: Signal ): void {
-        this._signalBubble(signal);
     }
 
     /**

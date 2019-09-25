@@ -18,6 +18,7 @@
   "homepage": "https://github.com/codexsoft/json-api-sdk#readme",
   "dependencies": {
     "@types/crypto-js": "^3.1.43",
+    "@types/jquery": "^3.3.31",
     "@types/keypress": "^2.0.30",
     "crypto-js": "^3.1.9-1",
     "jquery": "^3.4.1",
