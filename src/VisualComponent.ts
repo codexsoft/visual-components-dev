@@ -8,6 +8,9 @@ import Detect from "./Detect";
 import JsxArray from "./JsxArray";
 import VisualComponentDisplayOptionsInterface from "./VisualComponentDisplayOptionsInterface";
 import expect from "./shortcut-functions/expect";
+import ComponentStartedEvent from "./events/ComponentStartedEvent";
+import Events from "./events/Events";
+import ComponentStartedEventInterface from "./events/ComponentStartedEventInterface";
 
 export default abstract class VisualComponent {
 
@@ -37,7 +40,7 @@ export default abstract class VisualComponent {
 
     /**
      * какие события мыши терминировать по умолчанию в этом компоненте?
-     * например, le.components.DOMEvents.MouseEvent;
+     * например, DOMEvents.MouseEvent;
      * @type {string}
      */
     protected TERMINATE_EVENTS: string = '';
@@ -70,9 +73,9 @@ export default abstract class VisualComponent {
             }
         }
 
-        this.logger.log( 'Сконструирован компонент ' + this.debugName() );
+        this.logger._log( 'Сконструирован компонент ' + this.debugName() );
         this._configurate( parameters );
-        this.logger.minor( 'Инициализация компонента ' + this.debugName() );
+        this.logger._minor( 'Инициализация компонента ' + this.debugName() );
         this.init( parameters );
 
     }
@@ -118,20 +121,20 @@ export default abstract class VisualComponent {
 
         let stringified = JSON.stringify(parameters);
         if ( stringified.length <= 200 ) {
-            this.logger.minor('configurating '+this.getClass()+' using params: '+stringified);
+            this.logger._minor('configurating '+this.getClass()+' using params: '+stringified);
         } else {
-            this.logger.minor('configurating '+this.getClass());
+            this.logger._minor('configurating '+this.getClass());
         }
 
         if (!_.isEmpty(parameters))
-            this.logger.minor(parameters);
+            this.logger._minor(parameters);
 
         _.forEach( parameters, ( value, key ) => {
             // @ts-ignore
             self[key] = value;
         } );
 
-        this.logger.minor(this);
+        this.logger._minor(this);
 
     }
 
@@ -203,7 +206,7 @@ export default abstract class VisualComponent {
      */
     public prerenderedContentUpdate(content: string, id?: string ) {
 
-        this.logger.major('Обновление контента компонента '+id+' и реактивация!');
+        this.logger._major('Обновление контента компонента '+id+' и реактивация!');
 
         // TODO: replace может разрушить связь с переменными, указывающими на прежний элемент
         this.$element().replaceWith(content);
@@ -267,13 +270,15 @@ export default abstract class VisualComponent {
 
     private __startListenEvents() {
 
-        if ( this.TERMINATE_EVENTS ) {
+        return;
 
-            this.logger.minor( '[ BIND EVENTS ] Включено терминирование событий мыши по умолчанию.' );
+        if (this.TERMINATE_EVENTS) {
+
+            this.logger._minor( '[ BIND EVENTS ] Включено терминирование событий мыши по умолчанию.' );
             this.$element().on( this.TERMINATE_EVENTS, ( e: Event ) => {
 
                 if (!_.includes(['mousemove','mouseover','mouseout','mouseleave','mouseenter','mouseup','mousedown'], e.type)) {
-                    this.logger.minor('Event '+e.type+' terminated in '+this.getClass());
+                    this.logger._minor('Event '+e.type+' terminated in '+this.getClass());
                 }
 
                 e.stopPropagation();
@@ -288,7 +293,7 @@ export default abstract class VisualComponent {
         }
 
         $.each(eventHandlers, (eventName: string, handler: Function) => {
-            this.logger.minor( '[ BIND EVENTS ] Регистрация обработчика события: ' + eventName );
+            this.logger._minor( '[ BIND EVENTS ] Регистрация обработчика события: ' + eventName );
             this.$element().off(eventName); // снимаем существующий обработчик, если был
             // @ts-ignore
             this.$element().on(eventName, handler);
@@ -302,10 +307,27 @@ export default abstract class VisualComponent {
      * произвольный код по активации компонента.
      */
     public async __start() {
-        Components.dispatcher.dispatch('visualComponent.started', {});
+        // Components.dispatcher.dispatchEvent(new Event('visualComponent.started'));
+        // Components.dispatcher.dispatchEvent(new ComponentStartedEvent(this.id, this.listenKeyboard(), this));
+
+        // Components.dispatcher.dispatchEvent(new CustomEvent(Events.componentStarted, {
+        //     detail: {
+        //         componentId: this.id,
+        //         listenCombos: this.listenKeyboard(),
+        //         component: this
+        //     }
+        // }));
+
+        Components.dispatcher.dispatchEvent(Events.create<ComponentStartedEventInterface>(Events.componentStarted, {
+            componentId: this.id,
+            listenCombos: this.listenKeyboard(),
+            component: this
+        }));
+
+        // this.id, this.listenKeyboard(), this));
         this.__startListenEvents();
-        this.logger.minor('Активация компонента '+this.debugName());
-        Components.keyboard.registerCombos(this.id, this.listenKeyboard());
+        this.logger._minor('Активация компонента '+this.debugName());
+        // Components.keyboard.registerCombos(this.id, this.listenKeyboard());
 
         // executing custom activation code
         await this.activateAsync();
@@ -317,7 +339,7 @@ export default abstract class VisualComponent {
      * @private
      */
     public async __stop() {
-        this.logger.minor('Деактивация компонента '+this.debugName());
+        this.logger._minor('Деактивация компонента '+this.debugName());
 
         Components.stopComponentsInNode(this.element());
         // todo: fire event, keyboard must be pluggable!
@@ -389,16 +411,16 @@ export default abstract class VisualComponent {
     public trigger(name: string, parameters: Object = {}): VisualComponent {
 
         if ( !this.$element().length ) {
-            this.logger.notice('Failed to trigger event by component '+this.debugName()+': no DOM element tied!');
+            this.logger._notice('Failed to trigger event by component '+this.debugName()+': no DOM element tied!');
             return this;
         }
 
         let msg = 'Component '+this.debugName()+' triggered event '+name;
         msg += (_.isEmpty(parameters) ? ' without parameters' : ' providing parameters:');
-        this.logger.minor(msg);
+        this.logger._minor(msg);
 
         if (!_.isEmpty(parameters)) {
-            this.logger.minor(parameters);
+            this.logger._minor(parameters);
         }
 
         this.$element().triggerEvent(name, parameters);
@@ -478,6 +500,11 @@ export default abstract class VisualComponent {
     }
 
     public async display(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element|Comment> {
+
+        this.logger.debug('Displaying '+this.getClass()+' visual component');
+        console.log('Displaying '+this.getClass()+' visual component');
+        console.log(this.logger);
+
         this.importDisplayVars(options);
         let beforeRenderResult: any = await this.beforeRender();
         let content: any[]|string = await this.render(beforeRenderResult);
@@ -543,7 +570,7 @@ export default abstract class VisualComponent {
 
             // это редкий случай. такое возможно, если render сделан как JSX, который не массив возвращает
             if (_.isElement(content)) {
-                this.logger.notice('not implemented!');
+                this.logger._notice('not implemented!');
             }
 
             resolve(new Comment);
@@ -629,7 +656,7 @@ export default abstract class VisualComponent {
      *
      * Можно терминировать события, произошедшие в дочерних компонентах (опционально, по умолчанию отключено)
      */
-    protected listenEvents() {
+    public listenEvents() {
         return {};
     }
 
@@ -640,14 +667,14 @@ export default abstract class VisualComponent {
      */
     public _signalBubble( signal: Signal ) {
 
-        this.logger.minor( 'Всплытие сигнала вверх...' );
+        this.logger._minor( 'Всплытие сигнала вверх...' );
 
         let parentModel = Components.findParentComponent(this);
 
         try {
             expect(parentModel, 'Родительский компонент не обнаружен!');
         } catch ( e ) {
-            this.logger.error( e.message );
+            this.logger._error( e.message );
             return;
         }
 
@@ -705,19 +732,19 @@ export default abstract class VisualComponent {
 
         } else {
 
-            this.logger.minor( 'Handling signal by customSignalHandler in ' + this.debugName() );
+            this.logger._minor( 'Handling signal by customSignalHandler in ' + this.debugName() );
             let customResult = this.signalCustomHandler(signal);
             if (customResult !== null) {
                 continueBubbling = customResult;
             } else {
-                this.logger.minor('Signal handler not set in '+this.debugName());
+                this.logger._minor('Signal handler not set in '+this.debugName());
             }
         }
 
         if ( continueBubbling ) {
             this._signalBubble( signal );
         } else {
-            this.logger.minor( 'Signal '+signal.name+' bubbling stopped!' );
+            this.logger._minor( 'Signal '+signal.name+' bubbling stopped!' );
         }
 
     }
@@ -733,7 +760,7 @@ export default abstract class VisualComponent {
 
         let signal = new Signal(name, this);
         signal.data = data;
-        this.logger.log( 'Signal "' + name + '" '+JSON.stringify(data)+' fired in '+this.debugName()+'!' );
+        this.logger._log( 'Signal "' + name + '" '+JSON.stringify(data)+' fired in '+this.debugName()+'!' );
 
         this._signalHandle( signal );
 

@@ -1,5 +1,6 @@
 import LoggerInterface from "./LoggerInterface";
 import * as _ from "lodash";
+import {LoggableType} from "./types/LoggableType";
 
 export default class LegacyConsoleLogger implements LoggerInterface
 {
@@ -48,9 +49,9 @@ export default class LegacyConsoleLogger implements LoggerInterface
     // let on = true;
 
 
-    public log(message: any): void {
+    public _log(message: any): void {
         this.counter++;
-        this.settings.on && this.info(message);
+        this.settings.on && this._info(message);
         // this.on && this.info(message);
     }
 
@@ -81,7 +82,7 @@ export default class LegacyConsoleLogger implements LoggerInterface
     // }
 
     // public info( message: any ): void {
-    public info( message: any ): void {
+    public _info(message: any ): void {
         this.counter++;
         this.settings.on && console.log(message);
         // this.on && console.log(message);
@@ -90,7 +91,7 @@ export default class LegacyConsoleLogger implements LoggerInterface
     //info: function( message ) {
     //	LE.console.on ? console.info(message) : null;
     //},
-    public major( message: any ): void {
+    public _major(message: any ): void {
 
         this.counter++;
 
@@ -105,7 +106,7 @@ export default class LegacyConsoleLogger implements LoggerInterface
         //$LE.console.on ? console.log('%c'+message,'font-weight: bold') : null;
     }
 
-    public notice( message: any ): void {
+    public _notice(message: any ): void {
 
         this.counter++;
 
@@ -123,13 +124,13 @@ export default class LegacyConsoleLogger implements LoggerInterface
 
     }
 
-    public warn( message: any ): void {
+    public _warn(message: any ): void {
         this.counter++;
         this.settings.on ? console.warn(message) : null;
         // this.on ? console.warn(message) : null;
     }
 
-    public error( message: string ): void {
+    public _error(message: string ): void {
 
         this.counter++;
 
@@ -143,26 +144,26 @@ export default class LegacyConsoleLogger implements LoggerInterface
         !this.LE_LOG_CONSOLE_DARK && console.log('%c'+message,'background-color: #F7EAE6; color: #940000;');
     }
 
-    public timenotice( message: string ): void {
-        this.notice( this.stamp(message) );
+    public _timenotice(message: string ): void {
+        this._notice( this.stamp(message) );
     }
 
-    public timeminor( message: string ): void {
-        this.minor(this.stamp(message));
+    public _timeminor(message: string ): void {
+        this._minor(this.stamp(message));
     }
 
-    public timeinfo( message: string ): void {
-        this.info( this.stamp(message) );
+    public _timeinfo(message: string ): void {
+        this._info( this.stamp(message) );
     }
 
-    public timewarn( message: string ): void {
-        this.settings.on ? this.warn( this.logtime() + ': ' + message) : null;
+    public _timewarn(message: string ): void {
+        this.settings.on ? this._warn( this.logtime() + ': ' + message) : null;
         // this.on ? this.warn( this.logtime() + ': ' + message) : null;
     }
 
-    public timeerror( message: string ): void {
+    public _timeerror(message: string ): void {
 
-        this.error( this.stamp(message) );
+        this._error( this.stamp(message) );
 
         //if ( _.isObject(message) || _.isArray(message) ) return error(message);
 
@@ -184,34 +185,34 @@ export default class LegacyConsoleLogger implements LoggerInterface
         return message;
     }
 
-    public group( message: string, collapsed: boolean = true ): void {
+    public _group(message: string, collapsed: boolean = true ): void {
 
         this.counter++;
 
         // if ( !this.on ) return;
         if ( !this.settings.on ) return;
         // if ( collapsed === undefined ) collapsed = true;
-        if ( !console.group ) return this.major( message );
+        if ( !console.group ) return this._major( message );
 
         collapsed && console.groupCollapsed
             ? console.groupCollapsed( message )
             : console.group( message );
 
     }
-    public close(): void {
+    public _close(): void {
         this.counter++;
         if ( !console.groupEnd ) return;
         this.settings.on && console.groupEnd();
         // this.on && console.groupEnd();
     }
 
-    public clean(): void {
+    public _clean(): void {
         this.counter++;
         this.settings.allowClearing && console.clear();
         // this.LE_LOG_CONSOLE_CLEAR && console.clear();
     }
 
-    public minor( message: string ) {
+    public _minor(message: string ) {
 
         this.counter++;
 
@@ -226,10 +227,102 @@ export default class LegacyConsoleLogger implements LoggerInterface
 
     }
 
-    public space() {
+    public _space() {
         this.counter++;
         this.settings.on && console.log('');
         // this.on && console.log('');
     }
+
+    /**
+     * System is unusable.
+     *
+     * @param {LoggableType} message
+     * @param {Object} context
+     * @return void
+     */
+    emergency(message: LoggableType, context?: Object): void {};
+
+    /**
+     * Action must be taken immediately.
+     *
+     * Example: Entire website down, database unavailable, etc. This should
+     * trigger the SMS alerts and wake you up.
+     *
+     * @param {LoggableType} message
+     * @param {Object} context     * @return void
+     */
+    alert(message: LoggableType, context?: Object): void {};
+
+    /**
+     * Critical conditions.
+     *
+     * Example: Application component unavailable, unexpected exception.
+     *
+     * @param {LoggableType} message
+     * @param {Object} context
+     * @return void
+     */
+    critical(message: LoggableType, context?: Object): void {};
+
+    /**
+     * Runtime errors that do not require immediate action but should typically
+     * be logged and monitored.
+     *
+     * @param {LoggableType} message
+     * @param {Object} context
+     * @return void
+     */
+    error(message: LoggableType, context?: Object): void {};
+
+    /**
+     * Exceptional occurrences that are not errors.
+     *
+     * Example: Use of deprecated APIs, poor use of an API, undesirable things
+     * that are not necessarily wrong.
+     *
+     * @param {LoggableType} message
+     * @param {Object} context
+     * @return void
+     */
+    warning(message: LoggableType, context?: Object): void {};
+
+    /**
+     * Normal but significant events.
+     *
+     * @param {LoggableType} message
+     * @param {Object} context
+     * @return void
+     */
+    notice(message: LoggableType, context?: Object): void {};
+
+    /**
+     * Interesting events.
+     *
+     * Example: User logs in, SQL logs.
+     *
+     * @param {LoggableType} message
+     * @param {Object} context
+     * @return void
+     */
+    info(message: LoggableType, context?: Object): void {};
+
+    /**
+     * Detailed debug information.
+     *
+     * @param {LoggableType} message
+     * @param {Object} context
+     * @return void
+     */
+    debug(message: LoggableType, context?: Object): void {};
+
+    /**
+     * Logs with an arbitrary level.
+     *
+     * @param {number} level
+     * @param {LoggableType} message
+     * @param {Object} context
+     * @return void
+     */
+    log(level: number, message: LoggableType, context?: Object): void {};
 
 }

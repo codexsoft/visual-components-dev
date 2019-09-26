@@ -114,12 +114,12 @@ export default abstract class Common__Modal extends VisualComponent {
      */
     public finish( answer: any = null ) {
 
-        this.logger.minor('Finishing modal '+this.debugName()+'!..');
+        this.logger._minor('Finishing modal '+this.debugName()+'!..');
         Components.stopComponentsInNode( this.component.element() );
         this.component.__stop();
         this.destroyModal();
         this.killViewport();
-        this.logger.minor('Modals should be removed...');
+        this.logger._minor('Modals should be removed...');
         Components.keyboard.unregisterCombosForComponent(this.id);
         // debugger;
         // this.signal('cancel');

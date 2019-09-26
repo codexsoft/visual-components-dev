@@ -9,17 +9,35 @@ import Keyboard from "./Keyboard";
 import JstTemplates from "./JstTemplates";
 import ComponentsSettings from "./ComponentsSettings";
 import ComponentsEventDispatcher from "./ComponentsEventDispatcher";
+import ComponentStartedEvent from "./events/ComponentStartedEvent";
+import ComponentStartedEventInterface from "./events/ComponentStartedEventInterface";
+import Events from "./events/Events";
 
 /**
  * Реестр визуальных компонентов
  */
 export default class Components {
 
+    /**
+     * какие события мыши терминировать по умолчанию в этом компоненте?
+     * например, DOMEvents.MouseEvent;
+     * @type {string}
+     */
+    protected static TERMINATE_EVENTS: string = '';
+
+    static get logger(): LoggerInterface {
+        return this._logger;
+    }
+
+    static set logger(value: LoggerInterface) {
+        this._logger = value;
+    }
+
     public static keyboard: Keyboard;
     public static jstTemplates: JstTemplates;
     public static dispatcher: ComponentsEventDispatcher;
 
-    private static logger: LoggerInterface = new NullLogger();
+    private static _logger: LoggerInterface = new NullLogger();
     static settings: ComponentsSettings;
 
     private constructor(logger: LoggerInterface|null) {
@@ -72,15 +90,19 @@ export default class Components {
 
     public static activatePrerendered( $element: JQuery, componentClass: Function, params: Object = {} ) {
 
-        this.logger.space();
-        this.logger.major('Активация компонента '+Detect.className(componentClass)+', предварительно отрендеренного сервером: ');
+        this._logger._space();
+        this._logger._major('Активация компонента '+Detect.className(componentClass)+', предварительно отрендеренного сервером: ');
 
         try {
             $element.assignComponentToPrerendered( componentClass, params );
-        } catch ( e ) {
-            this.logger.error('Error while initializing component: '+e.message);
-            // this.logger.error('Error while initializing component <?= $_this->getRtid() ?>: '+e.message);
-            this.logger.log( e );
+        } catch (e) {
+
+            if (e instanceof Error) {
+                this._logger._error('Error while initializing component: '+e.message);
+                // this.logger.error('Error while initializing component <?= $_this->getRtid() ?>: '+e.message);
+                this._logger.debug(e);
+            }
+
         }
 
     }
@@ -98,7 +120,6 @@ export default class Components {
      * @returns {number}
      */
     public static nextId(): number {
-        //debugger;
         this._lastId++;
         return this._lastId;
     }
@@ -113,22 +134,95 @@ export default class Components {
         element.model = model;
     }
 
+    /*
     public static create(constructorFunction: Function, parameters: {} = {}): VisualComponent {
         // @ts-ignore
-        return new constructorFunction(parameters);
+        let component: VisualComponent = new constructorFunction(parameters);
+
+        component.id = Components.nextId(); // идентификатор DOM визуального компонента
+
+        let identifier: number|null = parameters.id || null;
+
+        if (identifier !== null) {
+            // @ts-ignore
+            let $identifier: JQuery = $(identifier);
+            if ($identifier.length) {
+                component.setElement($identifier.get(0));
+            }
+        }
+
+        this.logger._log( 'Сконструирован компонент ' + this.debugName() );
+        component._configurate( parameters );
+        this.logger._minor( 'Инициализация компонента ' + this.debugName() );
+        component.init( parameters );
+
+        return component;
     }
+    */
 
     public static init() {
 
+        debugger;
+        console.log('init');
+        // console.log(this._logger);
+        console.log(this.logger);
+        // this.logger.info('initialization');
         // debugger;
 
         this.jstTemplates = new JstTemplates();
         this.settings = new ComponentsSettings();
         this.dispatcher = new ComponentsEventDispatcher();
 
+        // @ts-ignore
+        this.dispatcher.addEventListener(Events.componentStarted, (e: CustomEvent<ComponentStartedEventInterface>) => {
+            this.logger.debug('HANDLER: Keyboard handlers activating for component '+Detect.className(e.detail.component));
+            if (this.keyboard) {
+                this.logger.debug('Keyboard is defined');
+                this.logger.debug(this.keyboard);
+                this.keyboard.registerCombos(e.detail.componentId, e.detail.listenCombos);
+            }
+        });
+
+        // @ts-ignore
+        this.dispatcher.addEventListener(Events.componentStarted, (e: CustomEvent<ComponentStartedEventInterface>) => {
+
+            this.logger.debug('HANDLER: Event handlers activating for component '+Detect.className(e.detail.component));
+            let component = e.detail.component;
+
+            if (this.TERMINATE_EVENTS) {
+
+                this.logger._minor( '[ BIND EVENTS ] Включено терминирование событий мыши по умолчанию.' );
+                component.$element().on( this.TERMINATE_EVENTS, ( e: Event ) => {
+
+                    if (!_.includes(['mousemove','mouseover','mouseout','mouseleave','mouseenter','mouseup','mousedown'], e.type)) {
+                        this.logger._minor('Event '+e.type+' terminated in '+component.getClass());
+                    }
+
+                    e.stopPropagation();
+
+                } );
+
+            }
+
+            let eventHandlers = component.listenEvents();
+            if (_.isEmpty( eventHandlers)) {
+                return;
+            }
+
+            $.each(eventHandlers, (eventName: string, handler: Function) => {
+                this.logger._minor( '[ BIND EVENTS ] Регистрация обработчика события: ' + eventName );
+                component.$element().off(eventName); // снимаем существующий обработчик, если был
+                // @ts-ignore
+                component.$element().on(eventName, handler);
+            } );
+
+        });
+
+        this.keyboard = new Keyboard(new Keypress.Listener(<Element>document.getElementsByTagName('body').item(0)));
         if (window.keypress) {
             // @ts-ignore
-            this.keyboard = new Keyboard(new window.keypress.Listener(document.getElementsByTagName('body').item(0)));
+            // this.keyboard = new Keyboard(new window.keypress.Listener(document.getElementsByTagName('body').item(0)));
+            // this.keyboard = new Keyboard(new Keypress.Listener(document.getElementsByTagName('body').item(0)));
 
             /*
             this.keyboard.registerCombos( 0, {

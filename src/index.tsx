@@ -2,6 +2,7 @@ import JsxArray from "./JsxArray";
 import TestComponent from "./components/TestComponent";
 import Components from "./Components";
 import * as $ from "jquery";
+import ConsoleLogger from "./ConsoleLogger";
 
 function x(jsx: JsxArray): Promise<any> {
     return new Promise<any>(async (resolve) => {
@@ -13,6 +14,7 @@ function x(jsx: JsxArray): Promise<any> {
 
 $(() => {
 
+    Components.logger = new ConsoleLogger();
     Components.init();
     let component = new TestComponent;
     let jsx = new JsxArray(component.render());

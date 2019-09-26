@@ -450,7 +450,7 @@ export default class JsxArray {
 
     private skipTag(message?: string): Node {
         if (message) {
-            this.logger.warn(message);
+            this.logger._warn(message);
         }
 
         return new Comment;
