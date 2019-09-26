@@ -1,0 +1,6 @@
+{
+  "name": "codexsoft-visual-components",
+  "main": "./src//**/*.d.ts",
+  "out": "./dist/app.d.ts",
+  "baseDir": "./srcc/"
+}

@@ -387,7 +387,7 @@ export default class JsxArray {
         // expect( generatedComponent instanceof VisualComponent, Detect.className(type)+' poor VisualComponent generator/instance!' );
 
         let renderedChildren: Element[] = await this.renderChildren(this.children);
-        let generatedElement = await generatedComponent.displayUniversal({
+        let generatedElement = await generatedComponent.display({
             providedAttributes: this.attributes,
             providedChildren: renderedChildren
         });

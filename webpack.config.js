@@ -1,4 +1,5 @@
 const path = require('path');
+var DeclarationBundlerPlugin = require('declaration-bundler-webpack-plugin');
 
 module.exports = {
     devtool: "source-map",
@@ -19,5 +20,14 @@ module.exports = {
                 exclude: /node_modules/
             }
         ]
-    }
+    },
+    plugins: [
+        new DeclarationBundlerPlugin({
+            // moduleName:'some.path.moduleName',
+            // moduleName:'./src/index.tsx',
+            // moduleName:'./src/index.tsx',
+            moduleName:'src.*',
+            out:'./dist/app.d.ts',
+        })
+    ]
 };

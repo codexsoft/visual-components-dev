@@ -14,9 +14,10 @@
 
 //    "noImplicitAny": true,
 //    "removeComments": true,
-    "experimentalDecorators": true,
+//    "experimentalDecorators": true,
     "preserveConstEnums": true,
-//    "outFile": "dist/app.js",
+    "declaration": true,
+    "outFile": "dist/app-tsc.js",
     "sourceMap": true,
     "jsx": "react",
     "jsxFactory": "Array",

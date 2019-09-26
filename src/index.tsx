@@ -26,7 +26,7 @@ $(() => {
     // });
 
     // console.log(component.displayUniversal());
-    component.displayUniversal().then((result) => {
+    component.display().then((result) => {
         console.log(result);
         $(result).appendTo($('body'));
     });

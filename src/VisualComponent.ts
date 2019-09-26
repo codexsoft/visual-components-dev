@@ -477,7 +477,7 @@ export default abstract class VisualComponent {
         return (element.tagName !== undefined) && (_.includes(['COMPONENT'], element.tagName));
     }
 
-    public async displayUniversal(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element|Comment> {
+    public async display(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element|Comment> {
         this.importDisplayVars(options);
         let beforeRenderResult: any = await this.beforeRender();
         let content: any[]|string = await this.render(beforeRenderResult);
