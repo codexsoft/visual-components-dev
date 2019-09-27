@@ -15,13 +15,35 @@ export function implementsInterface(object: {[index: string]: unknown}, objInter
         let actualValue: unknown = object[key];
         let actualType = typeof actualValue;
 
-        if ((typeof expectedType === 'string') && (actualType !== expectedType)) {
-            // console.log('FALSE because '+key+' with value "'+actualValue+'" (type '+actualType+') is not expected '+expectedType);
-            return false;
-        } else if (Array.isArray(expectedType)) {
-            if (!Array.isArray(actualValue) || !arrayMatchesInterface(actualValue, expectedType)) {
+        // debugger;
+
+        let x = {
+            "typeof expectedType === 'string'": typeof expectedType === 'string',
+            "expectedType === 'array'": expectedType === 'array',
+            "!Array.isArray(actualValue)": !Array.isArray(actualValue)
+        };
+
+        if (typeof expectedType === 'string') {
+
+            if ((expectedType === 'array') && !Array.isArray(actualValue)) {
+                return false;
+            } else if ((expectedType === 'object') && (actualType !== 'object')) {
+                return false;
+            } else if ((expectedType !== 'object') && (expectedType !== 'array') && (actualType !== expectedType)) {
+                // console.log('FALSE because '+key+' with value "'+actualValue+'" (type '+actualType+') is not expected '+expectedType);
                 return false;
             }
+
+        } else if (Array.isArray(expectedType)) {
+
+            if (!Array.isArray(actualValue)) {
+                return false;
+            }
+
+            if (!arrayMatchesInterface(actualValue, expectedType)) {
+                return false;
+            }
+
         } else if (typeof expectedType === 'object') {
             if ((actualType !== 'object') || !implementsInterface(<any>actualValue, expectedType)) {
                 // console.log('FALSE because '+key+' with value "'+actualValue+'" (type '+actualType+') is not object or does not implement expected structure '+expectedType);
@@ -61,9 +83,11 @@ export function arrayMatchesInterface(actualArray: unknown[], allowedTypesForArr
                 }
             }
 
-            if (arraysInAllowedTypes.length === 0) {
-                return false;
-            }
+            // if (arraysInAllowedTypes.length === 0) {
+            //     if (!includes(allowedTypesForArray, 'array')) {
+            //         return false;
+            //     }
+            // }
 
             if (!arraysInAllowedTypes.some((allowedArray: any[]) => {
                 return arrayMatchesInterface(actualArrayItem, allowedArray);

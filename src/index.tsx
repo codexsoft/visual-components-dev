@@ -22,20 +22,11 @@ $(() => {
     Components.init();
     let component = new TestComponent;
     let jsx = new JsxArray(component.render());
-// console.log(jsx);
-// let rendered = jsx.render();
-// console.log(rendered);
-// console.log(x(jsx));
 
-    // x(jsx).then((result) => {
+    // component.display().then((result) => {
     //     console.log(result);
+    //     $(result).appendTo($('body'));
     // });
-
-    // console.log(component.displayUniversal());
-    component.display().then((result) => {
-        console.log(result);
-        $(result).appendTo($('body'));
-    });
 
     let tests = [
         [{}, {x: 'string'}, false], // 0
@@ -44,6 +35,7 @@ $(() => {
         [{x: {}}, {x: 'object'}, true],
         [{x: 'asd', y: 42}, {x: 'string'}, true],
         [{x: ['asd', 42, 'fff'], y: 42}, {x: 'array'}, true],
+        [{x: ['asd', 42, 'fff'], y: 42}, {x: []}, false],
         [{x: ['asd', 42, 'fff'], y: 42}, {x: ['string','number']}, true],
         [{x: ['asd', {}, 'fff'], y: 42}, {x: ['string','number']}, false], // 6
         [{x: ['asd', 'bbb', 'qwe'], y: 42}, {x: ['string']}, true],
@@ -52,8 +44,12 @@ $(() => {
         [{x: {z: [42]}, y: 42}, {x: {z: ['number']}}, true],
         [{}, listenEventsInterface, false],
         [new Common__Dialog__Confirm, listenEventsInterface, true],
-        [new Common__Modal__Blurred, listenEventsInterface, false],
+        [new Common__Modal__Blurred, listenEventsInterface, true],
+        [new TestComponent, listenEventsInterface, false],
     ];
+
+    let passed = 0;
+    let failed = 0;
 
     tests.forEach(function(el: any, index, arr) {
         console.log('test no: ', index);
@@ -65,14 +61,18 @@ $(() => {
 
         let realResult = implementsInterface(actualObj, expectedInterface);
         if (realResult === expectedResult) {
+            passed++;
             console.log(index, expectedResult, realResult);
         } else {
+            failed++;
             console.log(actualObj);
             console.log(expectedInterface);
             console.error(index, expectedResult, realResult)
         }
 
     });
+
+    console.log('passed: '+passed+'; failed: '+failed+'; total: '+tests.length);
 
     // console.log(...[1,2,3]);
     // console.log(1, implementsInterface({x: ''}, {x: 'string'}));
