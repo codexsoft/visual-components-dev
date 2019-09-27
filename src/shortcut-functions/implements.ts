@@ -16,7 +16,7 @@ export function implementsInterface(object: {[index: string]: unknown}, objInter
         let actualType = typeof actualValue;
 
         if ((typeof expectedType === 'string') && (actualType !== expectedType)) {
-            console.log('FALSE because '+key+' with value "'+actualValue+'" (type '+actualType+') is not expected '+expectedType);
+            // console.log('FALSE because '+key+' with value "'+actualValue+'" (type '+actualType+') is not expected '+expectedType);
             return false;
         } else if (Array.isArray(expectedType)) {
             if (!Array.isArray(actualValue) || !arrayMatchesInterface(actualValue, expectedType)) {
@@ -24,7 +24,7 @@ export function implementsInterface(object: {[index: string]: unknown}, objInter
             }
         } else if (typeof expectedType === 'object') {
             if ((actualType !== 'object') || !implementsInterface(<any>actualValue, expectedType)) {
-                console.log('FALSE because '+key+' with value "'+actualValue+'" (type '+actualType+') is not object or does not implement expected structure '+expectedType);
+                // console.log('FALSE because '+key+' with value "'+actualValue+'" (type '+actualType+') is not object or does not implement expected structure '+expectedType);
                 return false;
             }
         }
@@ -41,13 +41,14 @@ export function arrayMatchesInterface(actualArray: unknown[], allowedTypesForArr
     }
 
     let arraysInAllowedTypes: any[]|null = null;
+    let objectsInAllowedTypes: any[]|null = null;
 
     return actualArray.every((actualArrayItem: unknown): boolean => {
         let actualArrayItemType = typeof actualArrayItem;
 
-        if ((actualArrayItemType === 'string') && !includes(allowedTypesForArray, actualArrayItemType)) {
-            return false;
-        }
+        // if ((actualArrayItemType === 'string') && !includes(allowedTypesForArray, actualArrayItemType)) {
+        //     return false;
+        // }
 
         if (Array.isArray(actualArrayItem)) {
 
@@ -67,12 +68,35 @@ export function arrayMatchesInterface(actualArray: unknown[], allowedTypesForArr
             if (!arraysInAllowedTypes.some((allowedArray: any[]) => {
                 return arrayMatchesInterface(actualArrayItem, allowedArray);
             })) {
-                return false;
+                if (!includes(allowedTypesForArray, 'array')) {
+                    return false;
+                }
             }
 
         }
 
-        return true;
+        if (actualArrayItemType === 'object') {
+
+            if (objectsInAllowedTypes === null) {
+                objectsInAllowedTypes = [];
+                for (let allowedTypesItem of allowedTypesForArray) {
+                    if (typeof allowedTypesItem === 'object') {
+                        objectsInAllowedTypes.push(allowedTypesItem);
+                    }
+                }
+            }
+
+            if (!objectsInAllowedTypes.some((allowedObjectStructure: any) => {
+                return implementsInterface(<{[index: string]: unknown}>actualArrayItem, allowedObjectStructure);
+            })) {
+                if (!includes(allowedTypesForArray, 'object')) {
+                    return false;
+                }
+            }
+
+        }
+
+        return includes(allowedTypesForArray, actualArrayItemType);
     });
 
 }

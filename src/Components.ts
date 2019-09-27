@@ -164,7 +164,7 @@ export default class Components {
 
     public static init() {
 
-        debugger;
+        // debugger;
         console.log('init');
         // console.log(this._logger);
         console.log(this.logger);

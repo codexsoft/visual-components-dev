@@ -76,12 +76,19 @@ export default abstract class VisualComponent {
         this.logger._log( 'Сконструирован компонент ' + this.debugName() );
         this._configurate( parameters );
         this.logger._minor( 'Инициализация компонента ' + this.debugName() );
-        this.init( parameters );
+        try {
+            this.init(parameters);
+        } catch(e) {
+            this.logger.error(e.message);
+            this.logger.error(e);
+        }
+
 
     }
 
     /**
      * Инициализация после конструирования компонента. Вызывается один раз.
+     * ВАЖНО! ЭЛЕМЕНТ ЕЩЕ НЕ ОТРИСОВАН! ИЗ INIT К НЕМУ НЕЛЬЗЯ ОБРАЩАТЬСЯ!
      * @param parameters
      */
     protected init( parameters: Object ) {
