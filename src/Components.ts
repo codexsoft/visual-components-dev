@@ -12,6 +12,8 @@ import ComponentsEventDispatcher from "./ComponentsEventDispatcher";
 import ComponentStartedEvent from "./events/ComponentStartedEvent";
 import ComponentStartedEventInterface from "./events/ComponentStartedEventInterface";
 import Events from "./events/Events";
+import {implementsInterface} from "./shortcut-functions/implements";
+import ListenEventsInterface, {listenEventsInterface} from "./types/ListenEventsInterface";
 
 /**
  * Реестр визуальных компонентов
@@ -186,8 +188,12 @@ export default class Components {
         // @ts-ignore
         this.dispatcher.addEventListener(Events.componentStarted, (e: CustomEvent<ComponentStartedEventInterface>) => {
 
+            if (!implementsInterface(e.detail.component, listenEventsInterface)) {
+                return;
+            }
+
             this.logger.debug('HANDLER: Event handlers activating for component '+Detect.className(e.detail.component));
-            let component = e.detail.component;
+            let component: ListenEventsInterface  = <ListenEventsInterface>e.detail.component;
 
             if (this.TERMINATE_EVENTS) {
 

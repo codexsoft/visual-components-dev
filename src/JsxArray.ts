@@ -3,6 +3,7 @@ import Detect from "./Detect";
 import VisualComponent from "./VisualComponent";
 import LoggerInterface from "./LoggerInterface";
 import NullLogger from "./NullLogger";
+import {RenderResultType} from "./types/RenderResultType";
 
 export default class JsxArray {
 
@@ -47,7 +48,7 @@ export default class JsxArray {
 
     }
 
-    public async render(): Promise<HTMLElement> {
+    public async render(): Promise<RenderResultType> {
         return new Promise<HTMLElement>(async (resolve: Function, reject: Function) => {
 
             this.resolve = resolve;
@@ -288,7 +289,7 @@ export default class JsxArray {
                 return this.resolve($(result).get(0));
             }
 
-            let rendered: HTMLElement = await (new JsxArray(result)).render();
+            let rendered = await (new JsxArray(result)).render();
 
             // вычисляем значение аттрибута CSS-классов
             if (this.attributes['class']) {
@@ -367,7 +368,7 @@ export default class JsxArray {
     /**
      * @param initParams
      */
-    private async renderJsxFromVisualComponent(initParams: Object|any): Promise<Node> {
+    private async renderJsxFromVisualComponent(initParams: Object|any): Promise<RenderResultType> {
         let generatedComponent: VisualComponent;
 
         if (typeof this.type === 'function') {

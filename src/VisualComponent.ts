@@ -8,9 +8,9 @@ import Detect from "./Detect";
 import JsxArray from "./JsxArray";
 import VisualComponentDisplayOptionsInterface from "./VisualComponentDisplayOptionsInterface";
 import expect from "./shortcut-functions/expect";
-import ComponentStartedEvent from "./events/ComponentStartedEvent";
 import Events from "./events/Events";
 import ComponentStartedEventInterface from "./events/ComponentStartedEventInterface";
+import {RenderResultType} from "./types/RenderResultType";
 
 export default abstract class VisualComponent {
 
@@ -268,6 +268,7 @@ export default abstract class VisualComponent {
         return staticClass ? staticClass : false;
     }
 
+    /*
     private __startListenEvents() {
 
         return;
@@ -300,6 +301,7 @@ export default abstract class VisualComponent {
         } );
 
     }
+    */
 
     /**
      * После рендеринга содержимого, нужно повесить на component.Element слушальщики событий,
@@ -325,7 +327,7 @@ export default abstract class VisualComponent {
         }));
 
         // this.id, this.listenKeyboard(), this));
-        this.__startListenEvents();
+        // this.__startListenEvents();
         this.logger._minor('Активация компонента '+this.debugName());
         // Components.keyboard.registerCombos(this.id, this.listenKeyboard());
 
@@ -513,7 +515,7 @@ export default abstract class VisualComponent {
 
             if (_.isArray(content)) { // JSX array-based render
 
-                let resultElement: HTMLElement = await (new JsxArray(<any[]>content)).render();
+                let resultElement = await (new JsxArray(<any[]>content)).render();
 
                 if (this.displayWithoutContainer) {
                     // simple case, used for components like form elements
@@ -646,19 +648,19 @@ export default abstract class VisualComponent {
         return this.getClass() + '('+this.id+')';
     }
 
-    /**
-     * События, которые компонент умеет обрабатывать
-     * Если событие не должно всплывать наверх, в обработчике нужно вернуть false
-     * По факту, это работает через JQuery.on()
-     *
-     * Внутри обработчика можно проверить, произошло ли событие внутри компонента:
-     * if ( this.eventNotInternal(e ) ) return;
-     *
-     * Можно терминировать события, произошедшие в дочерних компонентах (опционально, по умолчанию отключено)
-     */
-    public listenEvents() {
-        return {};
-    }
+    // /**
+    //  * События, которые компонент умеет обрабатывать
+    //  * Если событие не должно всплывать наверх, в обработчике нужно вернуть false
+    //  * По факту, это работает через JQuery.on()
+    //  *
+    //  * Внутри обработчика можно проверить, произошло ли событие внутри компонента:
+    //  * if ( this.eventNotInternal(e ) ) return;
+    //  *
+    //  * Можно терминировать события, произошедшие в дочерних компонентах (опционально, по умолчанию отключено)
+    //  */
+    // public listenEvents(): {[index: string]: Function} {
+    //     return {};
+    // }
 
     /**
      * Отправить сигнал на обработку вышестоящим визуальным компонентам

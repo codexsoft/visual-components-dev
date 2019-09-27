@@ -3,9 +3,8 @@ import * as _ from "lodash";
 
 export default class Detect {
 
-    static isVisualComponent(smth: any) {
+    static isVisualComponentConstructor(smth: any): boolean {
 
-        // if (_.isFunction(smth)) {
         if (typeof smth === 'function') {
             try {
                 smth = new smth;
@@ -14,9 +13,20 @@ export default class Detect {
             }
         }
 
-        if ( !_.isFunction(smth) && _.isObject(smth) && smth instanceof VisualComponent )
-            return true;
+        return true;
+    }
 
+    static isVisualComponent(smth: ObjectConstructor|VisualComponent): smth is VisualComponent {
+
+        if (typeof smth === 'function' && smth.constructor !== undefined) {
+            try {
+                smth = <VisualComponent>(new smth);
+            } catch ( e ) {
+                return false;
+            }
+        }
+
+        return smth instanceof VisualComponent;
     }
 
     static className(inputClass:Object|Function):string {

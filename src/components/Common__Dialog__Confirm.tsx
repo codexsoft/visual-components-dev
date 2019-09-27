@@ -1,8 +1,12 @@
 import VisualComponent from "../VisualComponent";
 import trigger from "../shortcut-functions/trigger";
 import * as _ from "lodash";
+import ListenEventsInterface from "../types/ListenEventsInterface";
 
-export default class Common__Dialog__Confirm extends VisualComponent {
+export default class Common__Dialog__Confirm extends VisualComponent implements ListenEventsInterface {
+// export default class Common__Dialog__Confirm implements VisualComponent, ListenEventsInterface {
+// export default class Common__Dialog__Confirm extends VisualComponent implements VisualComponent {
+// export default class Common__Dialog__Confirm extends VisualComponent {
 
     // public static readonly class: string = __CLASS__;
     // private readonly class: string = __CLASS__;
