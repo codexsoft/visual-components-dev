@@ -22,6 +22,7 @@
     "jsx": "react",
     "jsxFactory": "Array",
     "strict": true,
+//    "esModuleInterop": true,
     "lib": [
           "dom",
       //    "es5",

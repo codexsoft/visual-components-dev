@@ -4,7 +4,9 @@
   "description": "test",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test-mocha": "mocha -r ts-node/register src/**/*.spec.ts",
+    "test-mocha2": "mocha"
   },
   "repository": {
     "type": "git",
@@ -31,8 +33,16 @@
     "webpack-cli": "^3.3.9"
   },
   "devDependencies": {
+    "@types/chai": "^4.2.3",
+    "@types/jest": "^24.0.18",
+    "@types/mocha": "^5.2.7",
+    "chai": "^4.2.0",
     "declaration-bundler-webpack-plugin": "^1.0.3",
     "dts-bundle": "^0.7.3",
-    "dts-generator": "^3.0.0"
+    "dts-generator": "^3.0.0",
+    "jest": "^24.9.0",
+    "mocha": "^6.2.1",
+    "ts-jest": "^24.1.0",
+    "ts-node": "^8.4.1"
   }
 }

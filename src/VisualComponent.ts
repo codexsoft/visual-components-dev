@@ -7,7 +7,7 @@ import Components from "./Components";
 import Detect from "./Detect";
 import JsxArray from "./JsxArray";
 import VisualComponentDisplayOptionsInterface from "./VisualComponentDisplayOptionsInterface";
-import expect from "./shortcut-functions/expect";
+import ensure from "./shortcut-functions/ensure";
 import Events from "./events/Events";
 import ComponentStartedEventInterface from "./events/ComponentStartedEventInterface";
 import {RenderResultType} from "./types/RenderResultType";
@@ -681,7 +681,7 @@ export default abstract class VisualComponent {
         let parentModel = Components.findParentComponent(this);
 
         try {
-            expect(parentModel, 'Родительский компонент не обнаружен!');
+            ensure(parentModel, 'Родительский компонент не обнаружен!');
         } catch ( e ) {
             this.logger._error( e.message );
             return;

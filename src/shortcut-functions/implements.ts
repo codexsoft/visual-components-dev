@@ -1,6 +1,7 @@
 import { includes } from "lodash";
 
-export function implementsInterface(object: {[index: string]: unknown}, objInterface: {[index: string]: any;}): boolean {
+// export function implementsInterface(object: {[index: string]: unknown}, objInterface: {[index: string]: any;}): boolean {
+export function implementsInterface<T>(object: {[index: string]: unknown}|any, objInterface: {[index: string]: any;}): object is T {
 
     if (typeof object !== 'object' || typeof objInterface !== 'object') {
         return false;
@@ -17,11 +18,11 @@ export function implementsInterface(object: {[index: string]: unknown}, objInter
 
         // debugger;
 
-        let x = {
-            "typeof expectedType === 'string'": typeof expectedType === 'string',
-            "expectedType === 'array'": expectedType === 'array',
-            "!Array.isArray(actualValue)": !Array.isArray(actualValue)
-        };
+        // let x = {
+        //     "typeof expectedType === 'string'": typeof expectedType === 'string',
+        //     "expectedType === 'array'": expectedType === 'array',
+        //     "!Array.isArray(actualValue)": !Array.isArray(actualValue)
+        // };
 
         if (typeof expectedType === 'string') {
 

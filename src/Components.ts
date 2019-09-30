@@ -188,12 +188,12 @@ export default class Components {
         // @ts-ignore
         this.dispatcher.addEventListener(Events.componentStarted, (e: CustomEvent<ComponentStartedEventInterface>) => {
 
-            if (!implementsInterface(e.detail.component, listenEventsInterface)) {
+            if (!implementsInterface<ListenEventsInterface>(e.detail.component, listenEventsInterface)) {
                 return;
             }
 
             this.logger.debug('HANDLER: Event handlers activating for component '+Detect.className(e.detail.component));
-            let component: ListenEventsInterface  = <ListenEventsInterface>e.detail.component;
+            let component: ListenEventsInterface  = e.detail.component;
 
             if (this.TERMINATE_EVENTS) {
 

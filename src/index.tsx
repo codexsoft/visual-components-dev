@@ -28,6 +28,8 @@ $(() => {
     //     $(result).appendTo($('body'));
     // });
 
+    /*
+
     let tests = [
         [{}, {x: 'string'}, false], // 0
         [{x: ''}, {x: 'string'}, true],
@@ -57,7 +59,7 @@ $(() => {
         let expectedInterface = el[1];
         let expectedResult = el[2];
 
-        // console.log(expectedResult);
+        console.log(expectedResult);
 
         let realResult = implementsInterface(actualObj, expectedInterface);
         if (realResult === expectedResult) {
@@ -73,6 +75,8 @@ $(() => {
     });
 
     console.log('passed: '+passed+'; failed: '+failed+'; total: '+tests.length);
+
+    */
 
     // console.log(...[1,2,3]);
     // console.log(1, implementsInterface({x: ''}, {x: 'string'}));
