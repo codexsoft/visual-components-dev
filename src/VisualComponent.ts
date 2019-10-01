@@ -511,8 +511,8 @@ export default abstract class VisualComponent {
     public async display(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element|Comment> {
 
         this.logger.debug('Displaying '+this.getClass()+' visual component');
-        console.log('Displaying '+this.getClass()+' visual component');
-        console.log(this.logger);
+        this.logger.debug('Displaying '+this.getClass()+' visual component');
+        // console.log(this.logger);
 
         this.importDisplayVars(options);
         let beforeRenderResult: any = await this.beforeRender();

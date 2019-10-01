@@ -1,4 +1,5 @@
 import * as _ from "lodash";
+import * as $ from "jquery";
 import Detect from "./Detect";
 import VisualComponent from "./VisualComponent";
 import LoggerInterface from "./LoggerInterface";

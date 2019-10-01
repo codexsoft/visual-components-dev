@@ -26,8 +26,8 @@ test('basic', () => {
         [new TestComponent, listenEventsInterface, false],
     ];
 
-    let passed = 0;
-    let failed = 0;
+    // let passed = 0;
+    // let failed = 0;
 
     tests.forEach(function(el: any, index, arr) {
         // console.log('test no: ', index);

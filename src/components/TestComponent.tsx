@@ -11,6 +11,22 @@ export default class TestComponent extends VisualComponent{
 
             </TestComponent2>
 
+            <switch var={'c'}>
+
+                <case value="a">
+                    <h1>TEST CASE A</h1>
+                </case>
+
+                <case value="b">
+                    <h1>TEST CASE B</h1>
+                </case>
+
+                <default>
+                    <h1>TEST DEFAULT CASE</h1>
+                </default>
+
+            </switch>
+
             {/*<if pass={true}>*/}
             {/*    <h2>TRUE</h2>*/}
             {/*</if>*/}
