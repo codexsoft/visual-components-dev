@@ -17,5 +17,6 @@ module.exports = {
         "^.+\\.tsx?$": "ts-jest"
     },
     testRegex: '/tests/.*\\.(test|spec)?\\.(ts|tsx)$',
+    // testRegex: '/tests/.*\\.(test|spec|d)?\\.(ts|tsx)$',
     // testRegex: '<rootDir>/tests/.*\\.(test|spec)?\\.(ts|tsx)$',
 };

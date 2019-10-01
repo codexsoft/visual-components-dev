@@ -7,7 +7,7 @@ import {RenderResultType} from "./types/RenderResultType";
 
 export default class JsxArray {
 
-    private type: any;
+    private tokenType: any;
     private attributes: {
         config?: any,
         class?: any,
@@ -31,19 +31,22 @@ export default class JsxArray {
 
             let tempParams = _.clone(type);
             if ( _.isArray(tempParams[0]) ) {
-                this.type = 'component'; // TEMP!!!
+                this.tokenType = 'component'; // TEMP!!!
                 this.attributes = {};
                 this.children = tempParams;
             } else {
-                this.type = tempParams.shift();
+                this.tokenType = tempParams.shift();
                 this.attributes = tempParams.shift();
                 this.children = tempParams;
             }
 
+            this.attributes = this.attributes || {};
+            this.children = this.children || [];
+
             return;
         }
 
-        this.attributes = attributes;
+        this.attributes = attributes || {};
         this.children = children;
 
     }
@@ -51,28 +54,28 @@ export default class JsxArray {
     public async render(): Promise<RenderResultType> {
         return new Promise<HTMLElement>(async (resolve: Function, reject: Function) => {
 
-            debugger;
+            // debugger;
             this.resolve = resolve;
 
-            if (_.isUndefined(this.type)) {
+            if (_.isUndefined(this.tokenType)) {
                 return this.resolve(this.skipTag());
             }
 
-            if (this.type instanceof HTMLElement || this.type instanceof Text) {
-                return resolve(this.type);
+            if (this.tokenType instanceof HTMLElement || this.tokenType instanceof Text) {
+                return resolve(this.tokenType);
             }
 
-            if ( _.isString(this.type) ) {
+            if ( _.isString(this.tokenType) ) {
                 return await this.renderJsxFromString();
             }
 
             let initParams = {};
-            if ( this.attributes['config'] ) {
-                initParams = this.attributes['config'];
-                delete this.attributes['config'];
+            if (this.attributes && this.attributes.config) {
+                initParams = this.attributes.config;
+                delete this.attributes.config;
             }
 
-            if (!Detect.isVisualComponent(this.type)) {
+            if (!Detect.isVisualComponent(this.tokenType)) {
                 return this.renderJsxFromNotVisualComponent();
             }
 
@@ -84,15 +87,15 @@ export default class JsxArray {
 
         // специальные теги
 
-        if ( this.type == 'for' ) {
+        if ( this.tokenType == 'for' ) {
             return this.renderAsSpecialNodeFor();
         }
 
-        if ( this.type == 'if' ) {
+        if ( this.tokenType == 'if' ) {
             return this.renderAsSpecialNodeIf();
         }
 
-        if ( this.type == 'switch' ) {
+        if ( this.tokenType == 'switch' ) {
             try {
                 this.renderAsSpecialNodeSwitch();
             } catch (e) {
@@ -102,7 +105,7 @@ export default class JsxArray {
         }
 
         // если элемент - обычный тег, то привязывать компонент к нему не надо
-        let generatedElement = document.createElement(this.type);
+        let generatedElement = document.createElement(this.tokenType);
         this.applyAttributesToElement(generatedElement, this.attributes);
 
         let renderedChildren = await this.renderChildren(this.children);
@@ -281,7 +284,7 @@ export default class JsxArray {
         return new Promise<Element>(async () => {
 
             let renderedChildren = await this.renderChildren(this.children);
-            let result = this.type({
+            let result = this.tokenType({
                 providedAttributes: this.attributes,
                 providedChildren: renderedChildren,
             });
@@ -372,19 +375,19 @@ export default class JsxArray {
     private async renderJsxFromVisualComponent(initParams: Object|any): Promise<RenderResultType> {
         let generatedComponent: VisualComponent;
 
-        if (typeof this.type === 'function') {
+        if (typeof this.tokenType === 'function') {
             // @ts-ignore
-            generatedComponent = <VisualComponent>new this.type(initParams);
-        } else if ((typeof this.type === 'object') && (<{}>this.type instanceof VisualComponent)) {
+            generatedComponent = <VisualComponent>new this.tokenType(initParams);
+        } else if ((typeof this.tokenType === 'object') && (<{}>this.tokenType instanceof VisualComponent)) {
             // если элемент - уже существующий визуальный компонент
-            generatedComponent = this.type;
+            generatedComponent = this.tokenType;
         } else {
             return this.resolve(this.skipTag('Visual component cannot be rendered: it must me function or object'));
         }
 
         // noinspection SuspiciousTypeOfGuard,PointlessBooleanExpressionJS
         if (generatedComponent instanceof VisualComponent === false) {
-            throw new Error(Detect.className(this.type)+' poor VisualComponent generator/instance!');
+            throw new Error(Detect.className(this.tokenType)+' poor VisualComponent generator/instance!');
         }
         // expect( generatedComponent instanceof VisualComponent, Detect.className(type)+' poor VisualComponent generator/instance!' );
 

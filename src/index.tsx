@@ -4,17 +4,17 @@ import Components from "./Components";
 import * as $ from "jquery";
 import ConsoleLogger from "./ConsoleLogger";
 
-async function x(jsx: JsxArray): Promise<any> {
-    return new Promise<any>(async (resolve) => {
-        resolve(await jsx.render());
-    })
-}
+// async function x(jsx: JsxArray): Promise<any> {
+//     return new Promise<any>(async (resolve) => {
+//         resolve(await jsx.render());
+//     })
+// }
 
-let jsx = new JsxArray(<b>hello world<h1>Big world</h1></b>);
+// let jsx = new JsxArray(<b>hello world<h1>Big world</h1></b>);
 
-Promise.all([x(jsx)]).then((result: any) => {
-    console.log(result);
-});
+// Promise.all([x(jsx)]).then((result: any) => {
+//     console.log(result);
+// });
 
 $(() => {
 

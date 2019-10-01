@@ -5,3 +5,5 @@ declare namespace JSX {
     }
 
 }
+
+declare let React: any;

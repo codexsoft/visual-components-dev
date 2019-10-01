@@ -520,7 +520,7 @@ export default abstract class VisualComponent {
 
         return new Promise<Element|Comment>(async (resolve: Function, reject: Function) => {
 
-            debugger;
+            // debugger;
             if (_.isArray(content)) { // JSX array-based render
 
                 let resultElement = await (new JsxArray(<any[]>content)).render();
