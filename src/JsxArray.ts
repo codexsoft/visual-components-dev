@@ -51,6 +51,7 @@ export default class JsxArray {
     public async render(): Promise<RenderResultType> {
         return new Promise<HTMLElement>(async (resolve: Function, reject: Function) => {
 
+            debugger;
             this.resolve = resolve;
 
             if (_.isUndefined(this.type)) {

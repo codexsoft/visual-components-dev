@@ -22,9 +22,12 @@ $(() => {
     Components.init();
     let component = new TestComponent;
 
+    console.log('displaying');
     component.display().then((result) => {
         console.log(result);
         $(result).appendTo($('body'));
+    }).catch((e) => {
+        console.log(e);
     });
 
 });
