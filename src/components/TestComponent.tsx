@@ -1,7 +1,8 @@
 import VisualComponent from "../VisualComponent";
 import TestComponent2 from "./TestComponent2";
+import TestComponent3 from "./TestComponent3/TestComponent3";
 // import style from './TestComponent.style.css';
-const style = require('./TestComponent.style.css');
+// const style = require('./TestComponent.style.css');
 // import style from './TestComponent.style.css';
 
 export default class TestComponent extends VisualComponent{
@@ -44,6 +45,10 @@ export default class TestComponent extends VisualComponent{
             <if not={false}>
                 <h1>FALSE</h1>
             </if>
+
+            <TestComponent3>
+                Ok
+            </TestComponent3>
 
         </component>;
     }

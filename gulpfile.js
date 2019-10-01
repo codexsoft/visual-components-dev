@@ -68,7 +68,7 @@ function componentsLessWatch( pathToComponents ) {
 
 }
 
-function componentsLessCompile( pathToComponents ) {
+function componentsLessCompileOld( pathToComponents ) {
 
     // exit('asdfff');
 
@@ -103,8 +103,51 @@ function componentsLessCompile( pathToComponents ) {
 
 }
 
+function componentsLessCompile(pathToComponents, outputFileName, outputDir = null) {
+
+    // exit('asdfff');
+
+    if (!outputDir) {
+        outputDir = pathToComponents;
+    }
+
+    gulp.src(pathToComponents+'/**/*.less', () => {
+        console.log('asdf');
+    })
+
+    // /*
+        .pipe(foreach(function(stream, file){
+
+            var classname = path.basename(path.dirname(file.path));
+            console.log(classname);
+
+            return stream
+                .pipe(replace('\\\\style', 'div.VisualComponent.'+classname))
+                .pipe(replace('\\\\container', 'div.CONTAINER_'+classname))
+                .pipe(replace('\\\\body', 'body.BODY_'+classname))
+                ;
+        }))
+        // */
+
+        .pipe(less())
+        .pipe(autoprefixer({
+            // browsers: ['last 20 versions'],
+            cascade: false
+        }))
+        .pipe(cleanCSS())
+        // .pipe(cleanCSS({compatibility: 'ie8'}))
+        // .pipe(rename({extname: '.css'}))
+        .pipe(concat(outputFileName))
+        .pipe(gulp.dest(outputDir));
+
+}
+
+gulp.task('compileComponentsStylesOld',function(){
+    return componentsLessCompileOld('./src/components');
+});
+
 gulp.task('compileComponentsStyles',function(){
-    return componentsLessCompile('./src/components');
+    return componentsLessCompile('./src/components', 'app.css', './dist');
 });
 
 gulp.task('watchComponentsStyles',function(){
