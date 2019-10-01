@@ -545,6 +545,15 @@ export default abstract class VisualComponent {
                             }
                         }
 
+                        let attributes = resultElement.attributes;
+                        $.each(attributes, function() {
+                            if (this.name !== 'class') {
+                                $(container).attr(this.name, this.value);
+                            } else {
+                                $(container).addClass(this.value);
+                            }
+                        });
+
                         $(resultElement).contents().each( function() {
                             $(container).append(this);
                         });

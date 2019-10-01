@@ -5,6 +5,7 @@ import VisualComponent from "./VisualComponent";
 import LoggerInterface from "./LoggerInterface";
 import NullLogger from "./NullLogger";
 import {RenderResultType} from "./types/RenderResultType";
+import ConsoleLogger from "./ConsoleLogger";
 
 export default class JsxArray {
 
@@ -26,7 +27,13 @@ export default class JsxArray {
 
         // debugger;
         this.resolve = function(){};
-        this.logger = new NullLogger();
+        // this.logger = new NullLogger();
+        this.logger = new ConsoleLogger();
+
+        this.logger.info(type);
+        this.logger.info(attributes);
+        this.logger.info(children);
+
         // this.logger = logger || new NullLogger();
 
         if ( _.isArray(type) ) {
@@ -35,8 +42,11 @@ export default class JsxArray {
             if ( _.isArray(tempParams[0]) ) {
                 this.tokenType = 'component'; // TEMP!!!
                 this.attributes = {};
+                // debugger;
+                // this.attributes = tempParams[1];
                 this.children = tempParams;
             } else {
+                // debugger;
                 this.tokenType = tempParams.shift();
                 this.attributes = tempParams.shift();
                 this.children = tempParams;
@@ -69,6 +79,7 @@ export default class JsxArray {
             }
 
             if ( _.isString(this.tokenType) ) {
+                // debugger;
                 return await this.renderJsxFromString();
             }
 
@@ -121,16 +132,18 @@ export default class JsxArray {
         }
 
         // если элемент - обычный тег, то привязывать компонент к нему не надо
+        // todo: однако бывает что этот тег - "component"
         let generatedElement = document.createElement(this.tokenType);
+        // debugger;
         this.applyAttributesToElement(generatedElement, this.attributes);
 
         let renderedChildren = await this.renderChildren(this.children);
         // _.forEach(renderedChildren, (renderedChild: Element) => {
         renderedChildren.forEach((renderedChild: Element) => {
 
-            if (renderedChild instanceof Text)
+            if (renderedChild instanceof Text) {
                 generatedElement.appendChild(renderedChild);
-            else if ( renderedChild instanceof Element ) {
+            } else if ( renderedChild instanceof Element ) {
 
                 switch (renderedChild.tagName) {
 
@@ -180,7 +193,14 @@ export default class JsxArray {
             } else if ( _.startsWith(attribute,'data-') && _.isObjectLike(value) ) {
                 (<Element>element).setAttribute(attribute, JSON.stringify(value)); // а если еще раз вызвать, перезапишет?
             } else {
-                (<Element>element).setAttribute(attribute, value.toString()); // а если еще раз вызвать, перезапишет?
+                let stringified: string;
+                try {
+                    stringified = value.toString();
+                } catch (e) {
+                    stringified = 'Unable to stringify value of attribute '+attribute;
+                }
+
+                (<Element>element).setAttribute(attribute, stringified); // а если еще раз вызвать, перезапишет?
             }
 
         });
@@ -188,7 +208,7 @@ export default class JsxArray {
     }
 
     private async renderAsSpecialNodeFor() {
-        debugger;
+        // debugger;
         if ( !('each' in this.attributes) ) {
             return this.resolve(this.skipTag('Incorrect "each" attribute in FOREACH statement!'));
         }

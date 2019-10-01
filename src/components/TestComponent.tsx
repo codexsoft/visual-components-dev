@@ -2,14 +2,23 @@ import VisualComponent from "../VisualComponent";
 import TestComponent2 from "./TestComponent2";
 import TestComponent3 from "./TestComponent3/TestComponent3";
 // import style from './TestComponent.style.css';
-// const style = require('./TestComponent.style.css');
+const style = require('./TestComponent.style.css');
 // import style from './TestComponent.style.css';
 
 export default class TestComponent extends VisualComponent{
 
     render(params?: {[p: string]: any}): Promise<any[] | string> | any[] | string {
-        // return <component class={style.main}>
-        return <component>
+        // console.log('test CSS module...');
+        // console.log('style: ');
+        // console.log(style);
+        // console.log('wow: ');
+        // console.log(style.wow);
+        // console.log(style.locals.wow);
+
+        // return <component class="{style.main}">
+        return <component class="hello" style="color: blue;">
+
+            <h1 class={style.locals.wow}>Works? Really!?</h1>
 
             <b>hello world<h1>Big world</h1></b>
 

@@ -56,13 +56,30 @@ module.exports = {
             //     ],
             // },
 
+            // {
+            //     test: /\.css/,
+            //     use: [
+            //         'style-loader',
+            //         'css-loader'
+            //     ],
+            //     include: __dirname + '/src'
+            // },
+
             {
-                test: /\.css/,
+                test: /\.css$/,
                 use: [
-                    'style-loader',
-                    'css-loader'
-                ],
-                include: __dirname + '/src'
+                    // {
+                    //     loader: MiniCssExtractPlugin.loader,
+                    // },
+                    // MiniCssExtractPlugin.loader,
+                    'css-modules-typescript-loader',
+                    {
+                        loader: 'css-loader',
+                        options: {
+                            modules: true
+                        }
+                    }
+                ]
             },
 
             // {
