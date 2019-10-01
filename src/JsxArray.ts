@@ -24,6 +24,7 @@ export default class JsxArray {
 
     constructor(type: any, attributes: Object = {}, ...children: Array<any>) {
 
+        // debugger;
         this.resolve = function(){};
         this.logger = new NullLogger();
         // this.logger = logger || new NullLogger();
@@ -47,6 +48,7 @@ export default class JsxArray {
             return;
         }
 
+        this.tokenType = type;
         this.attributes = attributes || {};
         this.children = children;
 
@@ -185,6 +187,7 @@ export default class JsxArray {
     }
 
     private async renderAsSpecialNodeFor() {
+        debugger;
         if ( !('each' in this.attributes) ) {
             return this.resolve(this.skipTag('Incorrect "each" attribute in FOREACH statement!'));
         }

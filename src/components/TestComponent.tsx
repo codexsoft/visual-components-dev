@@ -37,9 +37,9 @@ export default class TestComponent extends VisualComponent{
                 <h2>TRUE</h2>
             </if>
 
-            {/*<if not={false}>*/}
-            {/*    <h1>FALSE</h1>*/}
-            {/*</if>*/}
+            <if not={false}>
+                <h1>FALSE</h1>
+            </if>
 
         </component>;
     }
