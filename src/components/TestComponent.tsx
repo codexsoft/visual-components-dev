@@ -1,12 +1,16 @@
 import VisualComponent from "../VisualComponent";
 import TestComponent2 from "./TestComponent2";
+// import style from './TestComponent.style.css';
+const style = require('./TestComponent.style.css');
+// import style from './TestComponent.style.css';
 
 export default class TestComponent extends VisualComponent{
 
     render(params?: {[p: string]: any}): Promise<any[] | string> | any[] | string {
+        // return <component class={style.main}>
         return <component>
 
-            {/*<b>hello world<h1 style="color: red;">Big world</h1></b>*/}
+            <b>hello world<h1>Big world</h1></b>
 
             {/*<TestComponent2>*/}
             {/**/}

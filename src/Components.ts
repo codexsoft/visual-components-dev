@@ -9,7 +9,7 @@ import Keyboard from "./Keyboard";
 import JstTemplates from "./JstTemplates";
 import ComponentsSettings from "./ComponentsSettings";
 import ComponentsEventDispatcher from "./ComponentsEventDispatcher";
-import ComponentStartedEvent from "./events/ComponentStartedEvent";
+// import ComponentStartedEvent from "./events/ComponentStartedEvent";
 import ComponentStartedEventInterface from "./events/ComponentStartedEventInterface";
 import Events from "./events/Events";
 import {implementsInterface} from "./shortcut-functions/implements";

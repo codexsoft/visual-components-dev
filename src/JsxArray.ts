@@ -50,7 +50,7 @@ export default class JsxArray {
 
         this.tokenType = type;
         this.attributes = attributes || {};
-        this.children = children;
+        this.children = children || [];
 
     }
 
@@ -125,7 +125,8 @@ export default class JsxArray {
         this.applyAttributesToElement(generatedElement, this.attributes);
 
         let renderedChildren = await this.renderChildren(this.children);
-        _.forEach(renderedChildren, (renderedChild: Element) => {
+        // _.forEach(renderedChildren, (renderedChild: Element) => {
+        renderedChildren.forEach((renderedChild: Element) => {
 
             if (renderedChild instanceof Text)
                 generatedElement.appendChild(renderedChild);
@@ -196,12 +197,12 @@ export default class JsxArray {
             return this.resolve(this.skipTag('Incorrect "do" attribute in FOREACH statement!'));
         }
 
-        let list = this.attributes['each'];
+        let list: any[] = this.attributes['each'];
         let func: Function = this.attributes['do'];
         let result: any[] = [];
 
         let iterator = 1;
-        _.forEach(list, (val, key, arr) => {
+        list.forEach((val, key, arr) => {
             result.push( func(val, key, iterator, arr) );
             iterator++;
         });
@@ -434,7 +435,7 @@ export default class JsxArray {
         let pendingRenderingElements: any[] = [];
         let providedChildren = [];
 
-        _.forEach(children, async childNode => {
+        children.forEach(async childNode => {
 
             if ( _.isString(childNode) ) {
                 pendingRenderingElements.push(document.createTextNode(childNode));
@@ -445,7 +446,7 @@ export default class JsxArray {
                 // и не факт что будут использованы... Ну ладно, пока так
 
                 if (_.isElement(childNode[0])) {
-                    _.forEach(childNode, (elem) => {
+                    childNode.forEach((elem) => {
                         pendingRenderingElements.push(elem);
                     } );
                 } else {
