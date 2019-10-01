@@ -5,11 +5,12 @@ export default class TestComponent extends VisualComponent{
 
     render(params?: {[p: string]: any}): Promise<any[] | string> | any[] | string {
         return <component>
-            <b>hello world<h1 style="color: red;">Big world</h1></b>
 
-            <TestComponent2>
+            {/*<b>hello world<h1 style="color: red;">Big world</h1></b>*/}
 
-            </TestComponent2>
+            {/*<TestComponent2>*/}
+            {/**/}
+            {/*</TestComponent2>*/}
 
             <switch var={'c'}>
 
@@ -27,9 +28,14 @@ export default class TestComponent extends VisualComponent{
 
             </switch>
 
-            {/*<if pass={true}>*/}
-            {/*    <h2>TRUE</h2>*/}
-            {/*</if>*/}
+            <for each={['a', 'b', 'c']} do={(letter: string)=>{
+                // if (!letter) return;
+                return <div class="extraInfo">{letter}</div>;
+            }} />
+
+            <if pass={true}>
+                <h2>TRUE</h2>
+            </if>
 
             {/*<if not={false}>*/}
             {/*    <h1>FALSE</h1>*/}

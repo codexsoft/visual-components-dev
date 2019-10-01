@@ -89,17 +89,30 @@ export default class JsxArray {
         // специальные теги
 
         if ( this.tokenType == 'for' ) {
-            return this.renderAsSpecialNodeFor();
+            try {
+                this.renderAsSpecialNodeFor();
+            } catch (e) {
+                this.logger.error('Failed to render FOR tag: '+e.message);
+                return this.resolve(this.skipTag());
+            }
+            // return this.renderAsSpecialNodeFor();
         }
 
         if ( this.tokenType == 'if' ) {
-            return this.renderAsSpecialNodeIf();
+            try {
+                this.renderAsSpecialNodeIf();
+            } catch (e) {
+                this.logger.error('Failed to render IF tag: '+e.message);
+                return this.resolve(this.skipTag());
+            }
+            // return this.renderAsSpecialNodeIf();
         }
 
         if ( this.tokenType == 'switch' ) {
             try {
                 this.renderAsSpecialNodeSwitch();
             } catch (e) {
+                this.logger.error('Failed to render SWITCH tag: '+e.message);
                 return this.resolve(this.skipTag());
             }
 
