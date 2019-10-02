@@ -1,3 +1,0 @@
-interface JQuery{
-    triggerEvent(eventName: string, params?: Object ): boolean;
-}

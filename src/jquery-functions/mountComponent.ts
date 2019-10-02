@@ -1,5 +1,6 @@
 import VisualComponent from "../VisualComponent";
 import Components from "../Components";
+import * as $ from "jquery";
 
 declare global {
 
@@ -9,7 +10,8 @@ declare global {
 
 }
 
-$.fn.mountComponent = async function(this: JQuery, component: VisualComponent, options: {mode: string} = {mode: 'replace'} ): Promise<Element> {
+// $.fn.mountComponent = async function(this: JQuery, component: VisualComponent, options: {mode: string} = {mode: 'replace'} ): Promise<Element> {
+async function mountComponent(this: JQuery, component: VisualComponent, options: {mode: string} = {mode: 'replace'} ): Promise<Element> {
 
     // noinspection SuspiciousTypeOfGuard
     if (!(component instanceof VisualComponent)) {
@@ -60,3 +62,7 @@ $.fn.mountComponent = async function(this: JQuery, component: VisualComponent, o
         resolve(rendered);
     });
 };
+
+export default function() {
+    $.fn.mountComponent = mountComponent;
+}

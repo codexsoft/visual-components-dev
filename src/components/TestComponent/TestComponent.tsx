@@ -19,8 +19,15 @@ export default class TestComponent extends VisualComponent {
             // $(await (new JsxArray(content).render())).appendTo(this.$element());
 
             // debugger;
-            let displayed = await (new Common__Dialog__Confirm()).display();
-            $(displayed).appendTo(this.$element());
+            // let displayed = await (new Common__Dialog__Confirm()).display();
+            let com1 = new Common__Dialog__Confirm().setText('Sure?');
+            // let displayed1 = await com1.display();
+            // $(displayed1).appendTo(this.$element());
+
+            let modal = (new Common__Modal__Blurred()).setComponent(com1);
+            $('body').mountComponent(modal);
+            // let displayed = await (new Common__Modal__Blurred()).setComponent(com1).display();
+            // $(displayed).appendTo($('body'));
             // debugger;
 
             resolve();
@@ -151,6 +158,10 @@ export default class TestComponent extends VisualComponent {
             <Common__Dialog__Confirm>
                 dfg
             </Common__Dialog__Confirm>
+
+            {/*<Common__Modal__Blurred>*/}
+            {/**/}
+            {/*</Common__Modal__Blurred>*/}
 
         </component>;
 

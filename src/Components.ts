@@ -14,6 +14,7 @@ import {implementsInterface} from "./shortcut-functions/implements";
 import ListenEventsInterface, {listenEventsInterface} from "./types/ListenEventsInterface";
 import KeyboardInterface, {listenKeyboardInterface} from "./KeyboardInterface";
 import triggerEventRegister from './jquery-functions/triggerEvent';
+import mountComponentRegister from './jquery-functions/mountComponent';
 // import JstTemplates from "./JstTemplates";
 // import ComponentStartedEvent from "./events/ComponentStartedEvent";
 
@@ -167,6 +168,7 @@ export default class Components {
     public static init() {
 
         triggerEventRegister();
+        mountComponentRegister();
 
         // debugger;
         console.log('init');

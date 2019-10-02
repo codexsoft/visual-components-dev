@@ -1,4 +1,5 @@
 import * as _ from "lodash";
+import * as $ from "jquery";
 import KeyboardInterface from "../../KeyboardInterface";
 import ListenEventsInterface from "../../types/ListenEventsInterface";
 import VisualComponent from "../../VisualComponent";
@@ -63,9 +64,10 @@ export default abstract class Common__Modal extends VisualComponent implements K
 
     async activateAsync(): Promise<any> {
         return new Promise(async (resolve: Function, reject: Function) => {
-            debugger;
+            // debugger;
             await this.$element().find('div.component').mountComponent(this.component);
             Components.keyboard.focusOn( this.component );
+            resolve();
         });
     }
 

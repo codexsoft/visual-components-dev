@@ -1,5 +1,6 @@
 import Common__Modal from "../Common__Modal/Common__Modal";
 import trigger from "../../shortcut-functions/trigger";
+import * as $ from "jquery";
 
 export default class Common__Modal__Blurred extends Common__Modal {
 
