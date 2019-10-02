@@ -1,0 +1,11 @@
+<div class="header">
+    <div style="text-align: left; vertical-align: middle; font-size: 18px;">
+        <%= data._this.title %>&nbsp;
+    </div>
+    <div style="text-align: right;">
+        <div onclick="$(this).triggerEvent('refresh')" class="button refreshButton"></div>
+        <div onclick="$(this).triggerEvent('cancel')" class="button closeButton"></div>
+    </div>
+</div>
+
+<div class="component ajax-loading"></div>

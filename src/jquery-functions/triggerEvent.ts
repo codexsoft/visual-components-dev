@@ -1,4 +1,5 @@
 import Tools from "../Tools";
+import * as $ from "jquery";
 
 declare global {
     interface JQuery{
@@ -11,7 +12,8 @@ declare global {
  * @param {String} eventName a given event to be fired - click,dblclick,mousedown,etc.
  * @param params
  */
-$.fn.triggerEvent = function( eventName: string, params: Object = {} ) {
+// $.fn.triggerEvent = function( eventName: string, params: Object = {} ) {
+function triggerEvent(this: JQuery, eventName: string, params: Object = {} ) {
 
     // debugger;
 
@@ -22,3 +24,7 @@ $.fn.triggerEvent = function( eventName: string, params: Object = {} ) {
     return false;
 
 };
+
+export default function() {
+    $.fn.triggerEvent = triggerEvent;
+}

@@ -1,4 +1,4 @@
-import VisualComponent from "../VisualComponent";
+import VisualComponent from "../../VisualComponent";
 
 export default class TestComponent2 extends VisualComponent{
 

@@ -17,7 +17,7 @@ export default abstract class VisualComponent {
     // public static readonly class: string = __CLASS__;
     // private readonly class: string = __CLASS__;
 
-    [key: string]: any;
+    // [key: string]: any;
 
     protected logger: LoggerInterface = new NullLogger();
 
@@ -328,8 +328,8 @@ export default abstract class VisualComponent {
         // }));
 
         Components.dispatcher.dispatchEvent(Events.create<ComponentStartedEventInterface>(Events.componentStarted, {
-            componentId: this.id,
-            listenCombos: this.listenKeyboard(),
+            // componentId: this.id,
+            // listenCombos: this.listenKeyboard(),
             component: this
         }));
 
@@ -396,10 +396,12 @@ export default abstract class VisualComponent {
      */
     public getAncestors(foundAncestors: string[] = []) {
 
+        // @ts-ignore
         if ( !this['__proto__'] || !this['__proto__'].constructor ) {
             return foundAncestors;
         }
 
+        // @ts-ignore
         let proto = this['__proto__'];
 
         // hack... Работает постольку, поскольку VisualComponent класс без родительского класса
@@ -437,12 +439,12 @@ export default abstract class VisualComponent {
 
     }
 
-    /**
-     * Привязка обработчиков клавиатурных сочетаний keypress
-     */
-    listenKeyboard(): Object {
-        return {};
-    }
+    // /**
+    //  * Привязка обработчиков клавиатурных сочетаний keypress
+    //  */
+    // listenKeyboard(): Object {
+    //     return {};
+    // }
 
     /**
      * Для получения сообщений из IFRAME-ов
@@ -452,17 +454,17 @@ export default abstract class VisualComponent {
         return {};
     }
 
-    /**
-     * Скомпилировать JST-шаблон
-     * TODO: а не следует ли возвращать HTMLElement?
-     * @returns {string}
-     */
-    protected renderJsTemplate( templateName: string, parameters: Object = {} ): string {
-        let templateId = 'template_jst_'+this.getClass()+'_'+templateName;
-        let templateString = $('#'+templateId).html();
-
-        return Components.jstTemplates.render(templateString, this, parameters);
-    }
+    // /**
+    //  * Скомпилировать JST-шаблон
+    //  * TODO: а не следует ли возвращать HTMLElement?
+    //  * @returns {string}
+    //  */
+    // protected renderJsTemplate( templateName: string, parameters: Object = {} ): string {
+    //     let templateId = 'template_jst_'+this.getClass()+'_'+templateName;
+    //     let templateString = $('#'+templateId).html();
+    //
+    //     return Components.jstTemplates.render(templateString, this, parameters);
+    // }
 
     /**
      * При рендеринге может быть использован метод компонента вроде this.layout_default();
@@ -481,6 +483,7 @@ export default abstract class VisualComponent {
      * @returns {boolean}
      */
     private __layoutMethodExists( layoutName: string = '' ): boolean {
+        // @ts-ignore
         return !!this[this.__layoutMethodName(layoutName)];
     }
 
@@ -702,15 +705,15 @@ export default abstract class VisualComponent {
         }
     }
 
-    /**
-     * Отрисовка компонента через JST-шаблон
-     * @param layoutName
-     * @param parameters
-     * @returns {string}
-     */
-    protected renderViaClient( layoutName: string = 'default', parameters: Object = {} ): string {
-        return this.renderJsTemplate(layoutName, parameters);
-    }
+    // /**
+    //  * Отрисовка компонента через JST-шаблон
+    //  * @param layoutName
+    //  * @param parameters
+    //  * @returns {string}
+    //  */
+    // protected renderViaClient( layoutName: string = 'default', parameters: Object = {} ): string {
+    //     return this.renderJsTemplate(layoutName, parameters);
+    // }
 
     protected refreshViewport() {
         this.switchLayoutTo( this.layout );

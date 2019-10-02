@@ -1,8 +1,8 @@
-import JsxArray from "./JsxArray";
-import TestComponent from "./components/TestComponent";
+// import JsxArray from "./JsxArray";
 import Components from "./Components";
 import * as $ from "jquery";
 import ConsoleLogger from "./ConsoleLogger";
+import TestComponent from "./components/TestComponent/TestComponent";
 
 // async function x(jsx: JsxArray): Promise<any> {
 //     return new Promise<any>(async (resolve) => {

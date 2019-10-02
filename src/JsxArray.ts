@@ -30,9 +30,9 @@ export default class JsxArray {
         // this.logger = new NullLogger();
         this.logger = new ConsoleLogger();
 
-        this.logger.info(type);
-        this.logger.info(attributes);
-        this.logger.info(children);
+        // this.logger.info(type);
+        // this.logger.info(attributes);
+        // this.logger.info(children);
 
         // this.logger = logger || new NullLogger();
 
@@ -75,7 +75,8 @@ export default class JsxArray {
             }
 
             if (this.tokenType instanceof HTMLElement || this.tokenType instanceof Text) {
-                return resolve(this.tokenType);
+                return this.resolve(this.tokenType);
+                // return resolve(this.tokenType);
             }
 
             if ( _.isString(this.tokenType) ) {
@@ -104,6 +105,7 @@ export default class JsxArray {
         if ( this.tokenType == 'for' ) {
             try {
                 this.renderAsSpecialNodeFor();
+                return;
             } catch (e) {
                 this.logger.error('Failed to render FOR tag: '+e.message);
                 return this.resolve(this.skipTag());
@@ -114,6 +116,7 @@ export default class JsxArray {
         if ( this.tokenType == 'if' ) {
             try {
                 this.renderAsSpecialNodeIf();
+                return;
             } catch (e) {
                 this.logger.error('Failed to render IF tag: '+e.message);
                 return this.resolve(this.skipTag());
@@ -124,6 +127,7 @@ export default class JsxArray {
         if ( this.tokenType == 'switch' ) {
             try {
                 this.renderAsSpecialNodeSwitch();
+                return;
             } catch (e) {
                 this.logger.error('Failed to render SWITCH tag: '+e.message);
                 return this.resolve(this.skipTag());
@@ -173,9 +177,9 @@ export default class JsxArray {
 
             }
 
-            return this.resolve(generatedElement);
-
         });
+
+        return this.resolve(generatedElement);
 
     }
 

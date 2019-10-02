@@ -1,11 +1,11 @@
-import Common__Modal from "./Common__Modal";
-import trigger from "../shortcut-functions/trigger";
+import Common__Modal from "../Common__Modal/Common__Modal";
+import trigger from "../../shortcut-functions/trigger";
 
 export default class Common__Modal__Blurred extends Common__Modal {
 
-    protected title: string = 'Untitled modal';
+    protected title: string = 'Untitled';
 
-    public setTitle(title: string) {
+    public setTitle( title: string ) {
         this.title = title;
         return this;
     }
@@ -56,7 +56,7 @@ export default class Common__Modal__Blurred extends Common__Modal {
         // $("html, body").animate({scrollTop: this.parentComponent.$element().offset().top },"slow");
     }
 
-    protected afterComponentMounted( renderedComponentElement: Element ) {
+    protected afterComponentMounted(renderedComponentElement: Element) {
     }
 
     render() {
@@ -65,7 +65,7 @@ export default class Common__Modal__Blurred extends Common__Modal {
                 <div class="header">
                     <div class="title">{this.title}&nbsp;</div>
                     <div style="text-align: right;">
-                        <div onclick={trigger('cancel')} class="button closeButton">
+                        <div onclick={ trigger('cancel') } class="button closeButton">
 
                         </div>
                     </div>

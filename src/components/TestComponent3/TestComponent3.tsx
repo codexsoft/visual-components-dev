@@ -6,6 +6,10 @@ import VisualComponent from "../../VisualComponent";
 
 export default class TestComponent3 extends VisualComponent{
 
+    protected activate(): void {
+        // alert('works');
+    }
+
     render(params?: {[p: string]: any}): Promise<any[] | string> | any[] | string {
         // return <component class={style.main}>
         return <component>

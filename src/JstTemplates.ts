@@ -1,6 +1,8 @@
 import { TemplateExecutor } from "lodash";
 import * as _ from "lodash";
-import * as Crypto from "crypto-js";
+// import * as Crypto from "crypto-js";
+// import * as Crypto from "crypto-js";
+import { MD5 } from "crypto-js";
 
 /**
  * Инструменты компиляции шаблонов
@@ -19,7 +21,7 @@ export default class JstTemplates {
     }
 
     public render(template: string, thisContext: any, parameters: {[index:string] : any} = {}) {
-        let hash: string = Crypto.MD5(template).toString();
+        let hash: string = MD5(template).toString();
         let compiled: TemplateExecutor|undefined = this.getCached(hash);
         if (compiled === undefined) {
             compiled = _.template(template, {variable: 'data'});

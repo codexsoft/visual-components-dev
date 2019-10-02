@@ -1,9 +1,11 @@
-import VisualComponent from "../VisualComponent";
-import Signal from "../Signal";
 import * as _ from "lodash";
-import Components from "../Components";
+import KeyboardInterface from "../../KeyboardInterface";
+import ListenEventsInterface from "../../types/ListenEventsInterface";
+import VisualComponent from "../../VisualComponent";
+import Signal from "../../Signal";
+import Components from "../../Components";
 
-export default abstract class Common__Modal extends VisualComponent {
+export default abstract class Common__Modal extends VisualComponent implements KeyboardInterface, ListenEventsInterface {
 
     // protected TERMINATE_EVENTS = true;
     // protected INDEPENDENT_MODAL: boolean = true;
@@ -40,12 +42,16 @@ export default abstract class Common__Modal extends VisualComponent {
         // }
     }
 
-    listenKeyboard() { return _.assign({
+    listenKeyboard() {
+        return {
+            esc: () => { this.finish(); this.signal('cancelled'); return false; },
+        }
+    }
 
-        // TODO: сделать возможным по клику вне окна закрывать его
-        esc: () => { this.finish(); this.signal('cancelled'); return false; },
-
-    }, super.listenKeyboard()); }
+    // listenKeyboard() { return _.assign({
+    //     TODO: сделать возможным по клику вне окна закрывать его
+    //     esc: () => { this.finish(); this.signal('cancelled'); return false; },
+    // }, super.listenKeyboard()); }
 
     /**
      * Обработка событий внутри компонента
@@ -57,6 +63,7 @@ export default abstract class Common__Modal extends VisualComponent {
 
     async activateAsync(): Promise<any> {
         return new Promise(async (resolve: Function, reject: Function) => {
+            debugger;
             await this.$element().find('div.component').mountComponent(this.component);
             Components.keyboard.focusOn( this.component );
         });

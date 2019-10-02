@@ -137,15 +137,22 @@ export default class Keyboard {
      * @param componentId
      * @param combosx
      */
-    public registerCombos(componentId: number, combosx: {}) {
+    public registerCombos(componentId: number, combosx: {[index: string]: Function}) {
 
         if ( _.isEmpty(combosx) ) return;
 
         // this.init();
 
-        $.each( combosx, ( combo, callbackFunction ) => {
-            this.addComboListener( combo, componentId, callbackFunction );
-        } );
+        // tests.forEach(function(el: any, index, arr) {
+        // combosx.forEach(function(el: any, index, arr) {});
+
+        for (let combo in combosx) {
+            this.addComboListener(combo, componentId, combosx[combo]);
+        }
+
+        // $.each( combosx, ( combo, callbackFunction ) => {
+        //     this.addComboListener( combo, componentId, callbackFunction );
+        // } );
     }
 
     /**

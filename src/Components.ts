@@ -6,14 +6,16 @@ import VisualComponent from "./VisualComponent";
 import NullLogger from "./NullLogger";
 import Detect from "./Detect";
 import Keyboard from "./Keyboard";
-import JstTemplates from "./JstTemplates";
 import ComponentsSettings from "./ComponentsSettings";
 import ComponentsEventDispatcher from "./ComponentsEventDispatcher";
-// import ComponentStartedEvent from "./events/ComponentStartedEvent";
 import ComponentStartedEventInterface from "./events/ComponentStartedEventInterface";
 import Events from "./events/Events";
 import {implementsInterface} from "./shortcut-functions/implements";
 import ListenEventsInterface, {listenEventsInterface} from "./types/ListenEventsInterface";
+import KeyboardInterface, {listenKeyboardInterface} from "./KeyboardInterface";
+import triggerEventRegister from './jquery-functions/triggerEvent';
+// import JstTemplates from "./JstTemplates";
+// import ComponentStartedEvent from "./events/ComponentStartedEvent";
 
 /**
  * Реестр визуальных компонентов
@@ -36,7 +38,7 @@ export default class Components {
     }
 
     public static keyboard: Keyboard;
-    public static jstTemplates: JstTemplates;
+    // public static jstTemplates: JstTemplates;
     public static dispatcher: ComponentsEventDispatcher;
 
     private static _logger: LoggerInterface = new NullLogger();
@@ -164,6 +166,8 @@ export default class Components {
 
     public static init() {
 
+        triggerEventRegister();
+
         // debugger;
         console.log('init');
         // console.log(this._logger);
@@ -171,24 +175,34 @@ export default class Components {
         // this.logger.info('initialization');
         // debugger;
 
-        this.jstTemplates = new JstTemplates();
+        // this.jstTemplates = new JstTemplates();
         this.settings = new ComponentsSettings();
         this.dispatcher = new ComponentsEventDispatcher();
 
         // @ts-ignore
         this.dispatcher.addEventListener(Events.componentStarted, (e: CustomEvent<ComponentStartedEventInterface>) => {
+
+            if (!implementsInterface<KeyboardInterface>(e.detail.component, listenKeyboardInterface)) {
+                return;
+            }
+
             this.logger.debug('HANDLER: Keyboard handlers activating for component '+Detect.className(e.detail.component));
             if (this.keyboard) {
                 this.logger.debug('Keyboard is defined');
                 this.logger.debug(this.keyboard);
-                this.keyboard.registerCombos(e.detail.componentId, e.detail.listenCombos);
+                // this.keyboard.registerCombos(e.detail.componentId, e.detail.listenCombos);
+                // this.keyboard.registerCombos(e.detail.component.getId(), e.detail.listenCombos);
+                this.keyboard.registerCombos(e.detail.component.getId(), e.detail.component.listenKeyboard());
             }
         });
 
         // @ts-ignore
         this.dispatcher.addEventListener(Events.componentStarted, (e: CustomEvent<ComponentStartedEventInterface>) => {
 
+            // debugger;
+
             if (!implementsInterface<ListenEventsInterface>(e.detail.component, listenEventsInterface)) {
+                debugger;
                 return;
             }
 

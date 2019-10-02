@@ -106,7 +106,7 @@ export default class Tools {
      * @param params
      */
     public static fireCustomEvent(element: HTMLElement, eventName: string, params: Object = {}) {
-        if (!_.isEmpty(params))
+        // if (!_.isEmpty(params))
         // le.console.log(params);
 
         // @ts-ignore
