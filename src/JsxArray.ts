@@ -116,8 +116,7 @@ export default class JsxArray {
 
         if ( this.tokenType == 'if' ) {
             try {
-                this.renderAsSpecialNodeIf();
-                return;
+                this.prepareRenderAsSpecialNodeIf();
             } catch (e) {
                 this.logger.error('Failed to render IF tag: '+e.message);
                 return this.resolve(this.skipTag());
@@ -127,8 +126,7 @@ export default class JsxArray {
 
         if ( this.tokenType == 'switch' ) {
             try {
-                this.renderAsSpecialNodeSwitch();
-                return;
+                this.prepareRenderAsSpecialNodeSwitch();
             } catch (e) {
                 this.logger.error('Failed to render SWITCH tag: '+e.message);
                 return this.resolve(this.skipTag());
@@ -237,8 +235,8 @@ export default class JsxArray {
         return this.resolve(rendered);
     }
 
-    private async renderAsSpecialNodeIf() {
-        debugger;
+    private async prepareRenderAsSpecialNodeIf() {
+        // debugger;
 
         if ( 'pass' in this.attributes && !this.attributes['pass'] ) {
             return this.resolve(this.skipTag());
@@ -271,14 +269,14 @@ export default class JsxArray {
             return this.resolve( rendered );
         }
 
-        this.resolve(await (new JsxArray('component', {}, this.children)).render())
+        // this.resolve(await (new JsxArray('component', {}, this.children)).render());
         // this.resolve(this.renderChildren(this.children))
     }
 
     /**
      * @throws Error
      */
-    private async renderAsSpecialNodeSwitch() {
+    private async prepareRenderAsSpecialNodeSwitch() {
         let testingValue = this.attributes['var'];
 
         let strictMode = false;
