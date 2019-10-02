@@ -4,7 +4,7 @@ import Detect from "./Detect";
 import VisualComponent from "./VisualComponent";
 import LoggerInterface from "./LoggerInterface";
 import NullLogger from "./NullLogger";
-import {RenderResultType} from "./types/RenderResultType";
+import {JsxRenderResultType} from "./types/JsxRenderResultType";
 import ConsoleLogger from "./ConsoleLogger";
 
 export default class JsxArray {
@@ -64,7 +64,7 @@ export default class JsxArray {
 
     }
 
-    public async render(): Promise<RenderResultType> {
+    public async render(): Promise<JsxRenderResultType> {
         return new Promise<HTMLElement>(async (resolve: Function, reject: Function) => {
 
             // debugger;
@@ -101,6 +101,7 @@ export default class JsxArray {
     private async renderJsxFromString(): Promise<any> {
 
         // специальные теги
+        // todo: need to made as components or something pluggable
 
         if ( this.tokenType == 'for' ) {
             try {
@@ -237,6 +238,8 @@ export default class JsxArray {
     }
 
     private async renderAsSpecialNodeIf() {
+        debugger;
+
         if ( 'pass' in this.attributes && !this.attributes['pass'] ) {
             return this.resolve(this.skipTag());
         }
@@ -267,6 +270,9 @@ export default class JsxArray {
 
             return this.resolve( rendered );
         }
+
+        this.resolve(await (new JsxArray('component', {}, this.children)).render())
+        // this.resolve(this.renderChildren(this.children))
     }
 
     /**
@@ -414,7 +420,7 @@ export default class JsxArray {
     /**
      * @param initParams
      */
-    private async renderJsxFromVisualComponent(initParams: Object|any): Promise<RenderResultType> {
+    private async renderJsxFromVisualComponent(initParams: Object|any): Promise<JsxRenderResultType> {
         let generatedComponent: VisualComponent;
 
         if (typeof this.tokenType === 'function') {

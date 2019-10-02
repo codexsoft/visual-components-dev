@@ -202,7 +202,7 @@ export default class Components {
             // debugger;
 
             if (!implementsInterface<ListenEventsInterface>(e.detail.component, listenEventsInterface)) {
-                debugger;
+                // debugger;
                 return;
             }
 

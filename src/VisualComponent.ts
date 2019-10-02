@@ -10,7 +10,8 @@ import VisualComponentDisplayOptionsInterface from "./VisualComponentDisplayOpti
 import ensure from "./shortcut-functions/ensure";
 import Events from "./events/Events";
 import ComponentStartedEventInterface from "./events/ComponentStartedEventInterface";
-import {RenderResultType} from "./types/RenderResultType";
+import {ComponentRenderResultType} from "./types/ComponentRenderResultType";
+// import {RenderResultType} from "./types/RenderResultType";
 
 export default abstract class VisualComponent {
 
@@ -617,7 +618,7 @@ export default abstract class VisualComponent {
         return;
     }
 
-    public abstract render(params?: {[index: string]: any}): Promise<any[]|string>|any[]|string;
+    public abstract render(params?: {[index: string]: any}): ComponentRenderResultType;
     /*
     public render(params?: {[index: string]: any}): Promise<any[]|string>|any[]|string {
         // by default, rendering via backend...

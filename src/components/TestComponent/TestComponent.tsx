@@ -6,6 +6,7 @@ import Common__Dialog__Confirm from "../Common__Dialog__Confirm/class";
 import Common__Modal__Blurred from "../Common__Modal__Blurred/class";
 import JsxArray from "../../JsxArray";
 import * as $ from "jquery";
+import {ComponentRenderResultType} from "../../types/ComponentRenderResultType";
 
 export default class TestComponent extends VisualComponent {
 
@@ -17,10 +18,10 @@ export default class TestComponent extends VisualComponent {
             // let content = await (new Common__Dialog__Confirm()).render();
             // $(await (new JsxArray(content).render())).appendTo(this.$element());
 
-            debugger;
+            // debugger;
             let displayed = await (new Common__Dialog__Confirm()).display();
             $(displayed).appendTo(this.$element());
-            debugger;
+            // debugger;
 
             resolve();
             return;
@@ -103,7 +104,9 @@ export default class TestComponent extends VisualComponent {
         */
     }
 
-    render(params?: {[p: string]: any}): Promise<any[] | string> | any[] | string {
+    render(params?: {[p: string]: any}): ComponentRenderResultType {
+
+        // return 'COOL';
         // console.log('test CSS module...');
         // console.log('style: ');
         // console.log(style);
@@ -112,7 +115,43 @@ export default class TestComponent extends VisualComponent {
         // console.log(style.locals.wow);
 
         return <component>
-            fasp[dfasdkfasdkf;okasdo;fko;asdk;flkasd;fk;lasdkf;aksd;ofkasfk
+             fasp[dfasdkfasdkf;okasdo;fko;asdk;flkasd;fk;lasdkf;aksd;ofkasfk
+            <h1>Works? Really!?</h1>
+
+            <b>hello world<h1>Big world</h1></b>
+
+            {/*<switch var={'c'}>*/}
+            {/**/}
+            {/*    <case value="a">*/}
+            {/*        <h1>TEST CASE A</h1>*/}
+            {/*    </case>*/}
+            {/**/}
+            {/*    <case value="b">*/}
+            {/*        <h1>TEST CASE B</h1>*/}
+            {/*    </case>*/}
+            {/**/}
+            {/*    <default>*/}
+            {/*        <h1>TEST DEFAULT CASE</h1>*/}
+            {/*    </default>*/}
+            {/**/}
+            {/*</switch>*/}
+
+            <for each={['a', 'b', 'c']} do={(letter: string)=>{
+                return <div class="extraInfo">{letter}</div>;
+            }} />
+
+            <if pass={true}>
+                <h2>TRUE</h2>
+            </if>
+
+            {/*<if not={false}>*/}
+            {/*    <h1>FALSE</h1>*/}
+            {/*</if>*/}
+
+            <Common__Dialog__Confirm>
+                dfg
+            </Common__Dialog__Confirm>
+
         </component>;
 
         // return <component class="{style.main}">
@@ -157,17 +196,17 @@ export default class TestComponent extends VisualComponent {
                 <h1>FALSE</h1>
             </if>
 
-            <TestComponent3>
-                Ok
-            </TestComponent3>
+            {/*<TestComponent3>*/}
+            {/*    Ok*/}
+            {/*</TestComponent3>*/}
 
             {/*<Common__Modal__Blurred>*/}
             {/**/}
             {/*</Common__Modal__Blurred>*/}
 
-            <Common__Dialog__Confirm>
-                dfg
-            </Common__Dialog__Confirm>
+            {/*<Common__Dialog__Confirm>*/}
+            {/*    dfg*/}
+            {/*</Common__Dialog__Confirm>*/}
 
         </component>;
     }
