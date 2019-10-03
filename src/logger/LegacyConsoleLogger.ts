@@ -1,9 +1,8 @@
-import LoggerInterface from "./LoggerInterface";
 import * as _ from "lodash";
-import {LoggableType} from "./types/LoggableType";
+import {LoggableType} from "../types/LoggableType";
+import LoggerInterface from "./LoggerInterface";
 
-export default class LegacyConsoleLogger implements LoggerInterface
-{
+export default class LegacyConsoleLogger implements LoggerInterface {
 
     // константы типов сообщений лога
 
@@ -40,7 +39,7 @@ export default class LegacyConsoleLogger implements LoggerInterface
     }
 
     // noinspection JSMethodCanBeStatic
-    private complex(message: any){
+    private complex(message: any) {
         return (_.isObject(message) || _.isArray(message));
     }
 
@@ -82,7 +81,7 @@ export default class LegacyConsoleLogger implements LoggerInterface
     // }
 
     // public info( message: any ): void {
-    public _info(message: any ): void {
+    public _info(message: any): void {
         this.counter++;
         this.settings.on && console.log(message);
         // this.on && console.log(message);
@@ -91,79 +90,79 @@ export default class LegacyConsoleLogger implements LoggerInterface
     //info: function( message ) {
     //	LE.console.on ? console.info(message) : null;
     //},
-    public _major(message: any ): void {
+    public _major(message: any): void {
 
         this.counter++;
 
         // if ( !this.on ) return;
-        if ( !this.settings.on ) return;
-        if ( !console.debug ) return console.log(message); // IE workaround
+        if (!this.settings.on) return;
+        if (!console.debug) return console.log(message); // IE workaround
 
-        if ( this.complex(message) ) return console.log(message);
+        if (this.complex(message)) return console.log(message);
 
-        console.log('%c'+message,'font-weight: bold');
+        console.log('%c' + message, 'font-weight: bold');
         //LE.console.on ? console.log('%c'+message,'text-decoration: underline') : null;
         //$LE.console.on ? console.log('%c'+message,'font-weight: bold') : null;
     }
 
-    public _notice(message: any ): void {
+    public _notice(message: any): void {
 
         this.counter++;
 
         // if ( !this.on ) return;
-        if ( !this.settings.on ) return;
-        if ( !console.debug ) return console.log(message); // IE workaround
+        if (!this.settings.on) return;
+        if (!console.debug) return console.log(message); // IE workaround
 
-        if ( this.complex(message) ) return console.info(message);
+        if (this.complex(message)) return console.info(message);
 
-        this.LE_LOG_CONSOLE_DARK && console.info('%c'+message,'color: #CC9460');
-        !this.LE_LOG_CONSOLE_DARK && console.info('%c'+message,'color: blue');
+        this.LE_LOG_CONSOLE_DARK && console.info('%c' + message, 'color: #CC9460');
+        !this.LE_LOG_CONSOLE_DARK && console.info('%c' + message, 'color: blue');
 
         //le.console.on && LE_LOG_CONSOLE_DARK ? console.log('%c'+message,'color: #CC9460') : null;
         //le.console.on && !LE_LOG_CONSOLE_DARK ? console.debug(message) : null;
 
     }
 
-    public _warn(message: any ): void {
+    public _warn(message: any): void {
         this.counter++;
         this.settings.on ? console.warn(message) : null;
         // this.on ? console.warn(message) : null;
     }
 
-    public _error(message: string ): void {
+    public _error(message: string): void {
 
         this.counter++;
 
         // if ( !this.on ) return;
-        if ( !this.settings.on ) return;
-        if ( !console.debug ) return console.log(message); // IE workaround
+        if (!this.settings.on) return;
+        if (!console.debug) return console.log(message); // IE workaround
 
-        if ( this.complex(message) ) return console.error(message);
+        if (this.complex(message)) return console.error(message);
 
-        this.LE_LOG_CONSOLE_DARK && console.log('%c'+message,'color: #D77F7B;');
-        !this.LE_LOG_CONSOLE_DARK && console.log('%c'+message,'background-color: #F7EAE6; color: #940000;');
+        this.LE_LOG_CONSOLE_DARK && console.log('%c' + message, 'color: #D77F7B;');
+        !this.LE_LOG_CONSOLE_DARK && console.log('%c' + message, 'background-color: #F7EAE6; color: #940000;');
     }
 
-    public _timenotice(message: string ): void {
-        this._notice( this.stamp(message) );
+    public _timenotice(message: string): void {
+        this._notice(this.stamp(message));
     }
 
-    public _timeminor(message: string ): void {
+    public _timeminor(message: string): void {
         this._minor(this.stamp(message));
     }
 
-    public _timeinfo(message: string ): void {
-        this._info( this.stamp(message) );
+    public _timeinfo(message: string): void {
+        this._info(this.stamp(message));
     }
 
-    public _timewarn(message: string ): void {
-        this.settings.on ? this._warn( this.logtime() + ': ' + message) : null;
+    public _timewarn(message: string): void {
+        this.settings.on ? this._warn(this.logtime() + ': ' + message) : null;
         // this.on ? this.warn( this.logtime() + ': ' + message) : null;
     }
 
-    public _timeerror(message: string ): void {
+    public _timeerror(message: string): void {
 
-        this._error( this.stamp(message) );
+        this._error(this.stamp(message));
 
         //if ( _.isObject(message) || _.isArray(message) ) return error(message);
 
@@ -180,28 +179,29 @@ export default class LegacyConsoleLogger implements LoggerInterface
 
     private stamp(message: string): string {
         if (!this.complex(message)) {
-            message = this.logtime()+': '+message
+            message = this.logtime() + ': ' + message
         }
         return message;
     }
 
-    public _group(message: string, collapsed: boolean = true ): void {
+    public _group(message: string, collapsed: boolean = true): void {
 
         this.counter++;
 
         // if ( !this.on ) return;
-        if ( !this.settings.on ) return;
+        if (!this.settings.on) return;
         // if ( collapsed === undefined ) collapsed = true;
-        if ( !console.group ) return this._major( message );
+        if (!console.group) return this._major(message);
 
         collapsed && console.groupCollapsed
-            ? console.groupCollapsed( message )
-            : console.group( message );
+            ? console.groupCollapsed(message)
+            : console.group(message);
 
     }
+
     public _close(): void {
         this.counter++;
-        if ( !console.groupEnd ) return;
+        if (!console.groupEnd) return;
         this.settings.on && console.groupEnd();
         // this.on && console.groupEnd();
     }
@@ -212,18 +212,18 @@ export default class LegacyConsoleLogger implements LoggerInterface
         // this.LE_LOG_CONSOLE_CLEAR && console.clear();
     }
 
-    public _minor(message: string ) {
+    public _minor(message: string) {
 
         this.counter++;
 
         // if ( !this.on ) return;
-        if ( !this.settings.on ) return;
-        if ( !console.debug ) return console.log(message); // IE workaround
+        if (!this.settings.on) return;
+        if (!console.debug) return console.log(message); // IE workaround
 
-        if ( this.complex(message) ) return console.log(message);
+        if (this.complex(message)) return console.log(message);
 
-        !this.LE_LOG_CONSOLE_DARK && console.debug('%c'+message,'color: silver');
-        this.LE_LOG_CONSOLE_DARK && console.debug('%c'+message,'color: #636E85');
+        !this.LE_LOG_CONSOLE_DARK && console.debug('%c' + message, 'color: silver');
+        this.LE_LOG_CONSOLE_DARK && console.debug('%c' + message, 'color: #636E85');
 
     }
 
@@ -240,7 +240,8 @@ export default class LegacyConsoleLogger implements LoggerInterface
      * @param {Object} context
      * @return void
      */
-    emergency(message: LoggableType, context?: Object): void {};
+    emergency(message: LoggableType, context?: Object): void {
+    };
 
     /**
      * Action must be taken immediately.
@@ -251,7 +252,8 @@ export default class LegacyConsoleLogger implements LoggerInterface
      * @param {LoggableType} message
      * @param {Object} context     * @return void
      */
-    alert(message: LoggableType, context?: Object): void {};
+    alert(message: LoggableType, context?: Object): void {
+    };
 
     /**
      * Critical conditions.
@@ -262,7 +264,8 @@ export default class LegacyConsoleLogger implements LoggerInterface
      * @param {Object} context
      * @return void
      */
-    critical(message: LoggableType, context?: Object): void {};
+    critical(message: LoggableType, context?: Object): void {
+    };
 
     /**
      * Runtime errors that do not require immediate action but should typically
@@ -272,7 +275,8 @@ export default class LegacyConsoleLogger implements LoggerInterface
      * @param {Object} context
      * @return void
      */
-    error(message: LoggableType, context?: Object): void {};
+    error(message: LoggableType, context?: Object): void {
+    };
 
     /**
      * Exceptional occurrences that are not errors.
@@ -284,7 +288,8 @@ export default class LegacyConsoleLogger implements LoggerInterface
      * @param {Object} context
      * @return void
      */
-    warning(message: LoggableType, context?: Object): void {};
+    warning(message: LoggableType, context?: Object): void {
+    };
 
     /**
      * Normal but significant events.
@@ -293,7 +298,8 @@ export default class LegacyConsoleLogger implements LoggerInterface
      * @param {Object} context
      * @return void
      */
-    notice(message: LoggableType, context?: Object): void {};
+    notice(message: LoggableType, context?: Object): void {
+    };
 
     /**
      * Interesting events.
@@ -304,7 +310,8 @@ export default class LegacyConsoleLogger implements LoggerInterface
      * @param {Object} context
      * @return void
      */
-    info(message: LoggableType, context?: Object): void {};
+    info(message: LoggableType, context?: Object): void {
+    };
 
     /**
      * Detailed debug information.
@@ -313,7 +320,8 @@ export default class LegacyConsoleLogger implements LoggerInterface
      * @param {Object} context
      * @return void
      */
-    debug(message: LoggableType, context?: Object): void {};
+    debug(message: LoggableType, context?: Object): void {
+    };
 
     /**
      * Logs with an arbitrary level.
@@ -323,6 +331,7 @@ export default class LegacyConsoleLogger implements LoggerInterface
      * @param {Object} context
      * @return void
      */
-    log(level: number, message: LoggableType, context?: Object): void {};
+    log(level: number, message: LoggableType, context?: Object): void {
+    };
 
 }

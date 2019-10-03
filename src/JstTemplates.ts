@@ -1,7 +1,5 @@
 import { TemplateExecutor } from "lodash";
 import * as _ from "lodash";
-// import * as Crypto from "crypto-js";
-// import * as Crypto from "crypto-js";
 import { MD5 } from "crypto-js";
 
 /**

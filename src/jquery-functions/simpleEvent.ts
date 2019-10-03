@@ -1,4 +1,4 @@
-import Tools from "../Tools";
+import {fireEvent} from "../shortcut-functions/tools";
 
 declare global {
     interface JQuery {
@@ -13,7 +13,7 @@ declare global {
 $.fn.simpleEvent = function( eventName: string ): void {
 
     $(this).each( function( index, elem: HTMLElement ){
-        Tools.fireEvent( elem, eventName );
+        fireEvent( elem, eventName );
     });
 
 };

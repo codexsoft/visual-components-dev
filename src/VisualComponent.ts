@@ -1,16 +1,16 @@
-import LoggerInterface from "./LoggerInterface";
 import Signal from './Signal';
 import * as _ from 'lodash';
 import * as $ from 'jquery';
-import NullLogger from "./NullLogger";
-import Components from "./Components";
+import Components, {VisualComonentIdentificator} from "./Components";
 import Detect from "./Detect";
 import JsxArray from "./JsxArray";
 import VisualComponentDisplayOptionsInterface from "./VisualComponentDisplayOptionsInterface";
 import ensure from "./shortcut-functions/ensure";
 import Events from "./events/Events";
-import ComponentStartedEventInterface from "./events/ComponentStartedEventInterface";
+import ComponentLifecycleEventInterface from "./events/ComponentLifecycleEventInterface";
 import {ComponentRenderResultType} from "./types/ComponentRenderResultType";
+import NullLogger from "./logger/NullLogger";
+import LoggerInterface from "./logger/LoggerInterface";
 // import {RenderResultType} from "./types/RenderResultType";
 
 export default abstract class VisualComponent {
@@ -39,17 +39,17 @@ export default abstract class VisualComponent {
      */
     private _element: HTMLElement|undefined = undefined;
 
-    /**
-     * какие события мыши терминировать по умолчанию в этом компоненте?
-     * например, DOMEvents.MouseEvent;
-     * @type {string}
-     */
-    protected TERMINATE_EVENTS: string = '';
+    // /**
+    //  * какие события мыши терминировать по умолчанию в этом компоненте?
+    //  * например, DOMEvents.MouseEvent;
+    //  * @type {string}
+    //  */
+    // protected TERMINATE_EVENTS: string = '';
 
     /**
      * ID визуального компонента, назначенный в браузере
      */
-    protected id: number;
+    protected id: VisualComonentIdentificator;
 
     private _jsxProvidedAttributes: {} = {};
 
@@ -59,12 +59,12 @@ export default abstract class VisualComponent {
     private _jsxProvidedChildren: any[] = [];
 
     constructor( parameters: {
-        id?: number
+        id?: VisualComonentIdentificator
     } = {} ) {
 
-        this.id = Components.nextId(); // идентификатор DOM визуального компонента
+        this.id = this.getClass()+Components.nextId(); // идентификатор DOM визуального компонента
 
-        let identifier: number|null = parameters['id'] || null;
+        let identifier: VisualComonentIdentificator|null = parameters['id'] || null;
 
         if (identifier) {
             // @ts-ignore
@@ -74,16 +74,15 @@ export default abstract class VisualComponent {
             }
         }
 
-        this.logger._log( 'Сконструирован компонент ' + this.debugName() );
-        this._configurate( parameters );
-        this.logger._minor( 'Инициализация компонента ' + this.debugName() );
+        this.logger.info( 'Сконструирован компонент ' + this.debugName() );
+        this._configurate( parameters ); // todo: really needed?
+        this.logger.debug( 'Инициализация компонента ' + this.debugName() );
         try {
             this.init(parameters);
         } catch(e) {
             this.logger.error(e.message);
             this.logger.error(e);
         }
-
 
     }
 
@@ -92,7 +91,7 @@ export default abstract class VisualComponent {
      * ВАЖНО! ЭЛЕМЕНТ ЕЩЕ НЕ ОТРИСОВАН! ИЗ INIT К НЕМУ НЕЛЬЗЯ ОБРАЩАТЬСЯ!
      * @param parameters
      */
-    protected init( parameters: Object ) {
+    protected async init(parameters: Object): Promise<void> {
     }
 
     protected exportData() {
@@ -107,7 +106,7 @@ export default abstract class VisualComponent {
                     '_element',
                     '__cachedDetectedClassname',
                     // 'USE_WARE',
-                    'TERMINATE_EVENTS',
+                    // 'TERMINATE_EVENTS',
                     // 'props',
                     // 'selfUrl',
                     'layout',
@@ -164,8 +163,8 @@ export default abstract class VisualComponent {
      * назначенный ID при конструировании в le.components
      * @returns {number}
      */
-    public getId(): number {
-        return <number>this.id;
+    public getId(): VisualComonentIdentificator {
+        return this.id;
     }
 
     // noinspection JSUnusedGlobalSymbols
@@ -175,10 +174,9 @@ export default abstract class VisualComponent {
      * @returns {this}
      */
     public installAppending( element: Element ): Promise<VisualComponent> {
-        let self: VisualComponent = this;
-        return new Promise<VisualComponent>(async function(resolve: Function, reject: Function) {
-            await $(element).mountComponent(self, { mode: 'append' });
-            resolve(self);
+        return new Promise<VisualComponent>(async (resolve: Function, reject: Function) => {
+            await $(element).mountComponent(this, { mode: 'append' });
+            resolve(this);
         });
     }
 
@@ -189,23 +187,11 @@ export default abstract class VisualComponent {
      * @returns {this}
      */
     public async installInstead( element: Element ): Promise<VisualComponent> {
-
-        let self: VisualComponent = this;
-        // let def = $.Deferred();
-        return new Promise<VisualComponent>(async function(resolve: Function, reject: Function) {
-            await $(element).mountComponent(self, { mode: 'replace' });
-            resolve(self);
+        return new Promise<VisualComponent>(async (resolve: Function, reject: Function) => {
+            await $(element).mountComponent(this, { mode: 'replace' });
+            resolve(this);
         });
-
-        // $(element).mountComponent( this, { mode: 'replace' } ).done( () => {
-        //     def.resolve( this );
-        // } );
-
-        // return <Promise<VisualComponent>> def.promise();
-
     }
-
-
 
     /**
      * Обновление контента СУЩЕСТВУЮШЕГО визуального компонента и его реактивация
@@ -214,7 +200,7 @@ export default abstract class VisualComponent {
      */
     public prerenderedContentUpdate(content: string, id?: string ) {
 
-        this.logger._major('Обновление контента компонента '+id+' и реактивация!');
+        this.logger.notice('Обновление контента компонента '+id+' и реактивация!');
 
         // TODO: replace может разрушить связь с переменными, указывающими на прежний элемент
         this.$element().replaceWith(content);
@@ -243,10 +229,11 @@ export default abstract class VisualComponent {
         this._element = undefined;
     }
 
-    public setElement(domElement: HTMLElement): void {
+    public setElement(domElement: HTMLElement): this {
         if (_.isElement(domElement)) {
             this._element = domElement;
         }
+        return this;
     }
 
     public getClass(): string {
@@ -317,31 +304,25 @@ export default abstract class VisualComponent {
      * произвольный код по активации компонента.
      */
     public async __start() {
-        // Components.dispatcher.dispatchEvent(new Event('visualComponent.started'));
-        // Components.dispatcher.dispatchEvent(new ComponentStartedEvent(this.id, this.listenKeyboard(), this));
 
-        // Components.dispatcher.dispatchEvent(new CustomEvent(Events.componentStarted, {
-        //     detail: {
-        //         componentId: this.id,
-        //         listenCombos: this.listenKeyboard(),
-        //         component: this
-        //     }
-        // }));
+        this.logger._minor('Активация компонента '+this.debugName());
 
-        Components.dispatcher.dispatchEvent(Events.create<ComponentStartedEventInterface>(Events.componentStarted, {
-            // componentId: this.id,
-            // listenCombos: this.listenKeyboard(),
+        Components.dispatcher.dispatchEvent(Events.create<ComponentLifecycleEventInterface>(Events.componentBeforeStart, {
             component: this
         }));
 
         // this.id, this.listenKeyboard(), this));
         // this.__startListenEvents();
-        this.logger._minor('Активация компонента '+this.debugName());
+
         // Components.keyboard.registerCombos(this.id, this.listenKeyboard());
 
         // executing custom activation code
         await this.activateAsync();
         this.activate();
+
+        Components.dispatcher.dispatchEvent(Events.create<ComponentLifecycleEventInterface>(Events.componentAfterStart, {
+            component: this
+        }));
     }
 
     /**
@@ -351,22 +332,25 @@ export default abstract class VisualComponent {
     public async __stop() {
         this.logger._minor('Деактивация компонента '+this.debugName());
 
-        Components.stopComponentsInNode(this.element());
-        // todo: fire event, keyboard must be pluggable!
-        Components.keyboard.unregisterCombosForComponent(this.id);
+        Components.dispatcher.dispatchEvent(Events.create<ComponentLifecycleEventInterface>(Events.componentBeforeStop, {
+            component: this
+        }));
 
+        await Components.stopComponentsInNode(this.element());
         this.killViewport();
-
-        // executing custom deactivation code
         await this.deactivateAsync();
-        this.deactivate();
+
+        Components.dispatcher.dispatchEvent(Events.create<ComponentLifecycleEventInterface>(Events.componentAfterStop, {
+            component: this
+        }));
     }
 
-    protected deactivate() {
-    }
-
+    /**
+     * Custom component deactivation code
+     */
     protected async deactivateAsync(): Promise<void> {
-        return new Promise(async (resolve: Function) => { resolve(); });
+        // return;
+        // return new Promise(async (resolve: Function) => { resolve(); });
     }
 
     /**
@@ -491,10 +475,10 @@ export default abstract class VisualComponent {
     /**
      * @param newLayout
      */
-    switchLayoutTo(newLayout: string): void {
+    async switchLayoutTo(newLayout: string): Promise<void> {
         if ( !this.__layoutMethodExists(newLayout) ) return;
         this.layout = newLayout;
-        this.$element().mountComponent(this);
+        await this.$element().mountComponent(this);
     }
 
     public createContainerElement(): HTMLElement {
@@ -515,7 +499,6 @@ export default abstract class VisualComponent {
     public async display(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element|Comment> {
 
         this.logger.debug('Displaying '+this.getClass()+' visual component');
-        this.logger.debug('Displaying '+this.getClass()+' visual component');
         // console.log(this.logger);
 
         this.importDisplayVars(options);
@@ -527,7 +510,7 @@ export default abstract class VisualComponent {
             // debugger;
             if (_.isArray(content)) { // JSX array-based render
 
-                let resultElement = await (new JsxArray(<any[]>content)).render();
+                let resultElement = await (new JsxArray(<any[]>content)).toHtml();
 
                 if (this.displayWithoutContainer) {
                     // simple case, used for components like form elements
@@ -666,7 +649,7 @@ export default abstract class VisualComponent {
     }
 
     public debugName() {
-        return this.getClass() + '('+this.id+')';
+        return this.getClass()+'('+this.id+')';
     }
 
     // /**
@@ -716,19 +699,19 @@ export default abstract class VisualComponent {
     //     return this.renderJsTemplate(layoutName, parameters);
     // }
 
-    protected refreshViewport() {
-        this.switchLayoutTo( this.layout );
+    protected async refreshViewport() {
+        await this.switchLayoutTo( this.layout );
     }
 
-    protected reRender() {
-        this.$element().mountComponent(this, {mode: 'replace'});
+    protected async reRender(): Promise<void> {
+        await this.$element().mountComponent(this, {mode: 'replace'});
     }
 
     protected signalCustomHandler(s: Signal): boolean|null {
         return null;
     }
 
-    protected _signalHandleHook(signal: Signal) {
+    protected async _signalHandleHook(signal: Signal): Promise<void> {
 
     }
 

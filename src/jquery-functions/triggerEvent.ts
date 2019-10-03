@@ -1,5 +1,5 @@
-import Tools from "../Tools";
 import * as $ from "jquery";
+import {fireCustomEvent} from "../shortcut-functions/tools";
 
 declare global {
     interface JQuery{
@@ -18,7 +18,7 @@ function triggerEvent(this: JQuery, eventName: string, params: Object = {} ) {
     // debugger;
 
     $(this).each( function( index, elem: HTMLElement ){
-        Tools.fireCustomEvent( elem, eventName, params );
+        fireCustomEvent( elem, eventName, params );
     });
 
     return false;

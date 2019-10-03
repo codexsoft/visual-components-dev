@@ -1,34 +1,39 @@
 import * as $ from 'jquery';
 import * as _ from 'lodash';
 import * as Keypress from 'keypress.js';
-import LoggerInterface from "./LoggerInterface";
 import VisualComponent from "./VisualComponent";
-import NullLogger from "./NullLogger";
 import Detect from "./Detect";
-import Keyboard from "./Keyboard";
 import ComponentsSettings from "./ComponentsSettings";
 import ComponentsEventDispatcher from "./ComponentsEventDispatcher";
-import ComponentStartedEventInterface from "./events/ComponentStartedEventInterface";
+import ComponentLifecycleEventInterface from "./events/ComponentLifecycleEventInterface";
 import Events from "./events/Events";
 import {implementsInterface} from "./shortcut-functions/implements";
 import ListenEventsInterface, {listenEventsInterface} from "./types/ListenEventsInterface";
-import KeyboardInterface, {listenKeyboardInterface} from "./KeyboardInterface";
 import triggerEventRegister from './jquery-functions/triggerEvent';
 import mountComponentRegister from './jquery-functions/mountComponent';
+import NullLogger from "./logger/NullLogger";
+import LoggerInterface from "./logger/LoggerInterface";
+import Keyboard from "./plugin/KeypressPlugin/Keyboard";
+import KeyboardInterface, {listenKeyboardInterface} from "./plugin/KeypressPlugin/KeyboardInterface";
+import AbstractPlugin from "./plugin/AbstractPlugin";
 // import JstTemplates from "./JstTemplates";
 // import ComponentStartedEvent from "./events/ComponentStartedEvent";
+
+export type VisualComonentIdentificator = string;
 
 /**
  * Реестр визуальных компонентов
  */
 export default class Components {
 
+    public static readonly visualComponentCssClass: string = '.VisualComponent';
+
     /**
      * какие события мыши терминировать по умолчанию в этом компоненте?
      * например, DOMEvents.MouseEvent;
      * @type {string}
      */
-    protected static TERMINATE_EVENTS: string = '';
+    public static TERMINATE_EVENTS: string = '';
 
     static get logger(): LoggerInterface {
         return this._logger;
@@ -41,58 +46,22 @@ export default class Components {
     public static keyboard: Keyboard;
     // public static jstTemplates: JstTemplates;
     public static dispatcher: ComponentsEventDispatcher;
+    public static plugins: AbstractPlugin[] = [];
 
     private static _logger: LoggerInterface = new NullLogger();
     static settings: ComponentsSettings;
-
-    private constructor(logger: LoggerInterface|null) {
-        // this.logger = logger || new NullLogger();
-    }
-
-    /**
-     * Достаточно полный перечень событий браузера, разбитый по группам
-     */
-    public static readonly DOMEvents = {
-        UIEvent: "abort DOMActivate error load resize scroll select unload",
-        ProgressEvent: "abort error load loadend loadstart progress progress timeout",
-        Event: "abort afterprint beforeprint cached canplay canplaythrough change chargingchange chargingtimechange checking close dischargingtimechange DOMContentLoaded downloading durationchange emptied ended ended error error error error fullscreenchange fullscreenerror input invalid languagechange levelchange loadeddata loadedmetadata noupdate obsolete offline online open open orientationchange pause pointerlockchange pointerlockerror play playing ratechange readystatechange reset seeked seeking stalled submit success suspend timeupdate updateready visibilitychange volumechange waiting",
-        AnimationEvent: "animationend animationiteration animationstart",
-        AudioProcessingEvent: "audioprocess",
-        BeforeUnloadEvent: "beforeunload",
-        TimeEvent: "beginEvent endEvent repeatEvent",
-        OtherEvent: "blocked complete upgradeneeded versionchange",
-        FocusEvent: "blur DOMFocusIn  Unimplemented DOMFocusOut  Unimplemented focus focusin focusout",
-        MouseEvent: "click contextmenu dblclick mousedown mouseenter mouseleave mousemove mouseout mouseover mouseup show",
-        SensorEvent: "compassneedscalibration Unimplemented userproximity",
-        OfflineAudioCompletionEvent: "complete",
-        CompositionEvent: "compositionend compositionstart compositionupdate",
-        ClipboardEvent: "copy cut paste",
-        DeviceLightEvent: "devicelight",
-        DeviceMotionEvent: "devicemotion",
-        DeviceOrientationEvent: "deviceorientation",
-        DeviceProximityEvent: "deviceproximity",
-        MutationNameEvent: "DOMAttributeNameChanged DOMElementNameChanged",
-        MutationEvent: "DOMAttrModified DOMCharacterDataModified DOMNodeInserted DOMNodeInsertedIntoDocument DOMNodeRemoved DOMNodeRemovedFromDocument DOMSubtreeModified",
-        DragEvent: "drag dragend dragenter dragleave dragover dragstart drop",
-        GamepadEvent: "gamepadconnected gamepaddisconnected",
-        HashChangeEvent: "hashchange",
-        KeyboardEvent: "keydown keypress keyup",
-        MessageEvent: "message message message message",
-        PageTransitionEvent: "pagehide pageshow",
-        PopStateEvent: "popstate",
-        StorageEvent: "storage",
-        SVGEvent: "SVGAbort SVGError SVGLoad SVGResize SVGScroll SVGUnload",
-        SVGZoomEvent: "SVGZoom",
-        TouchEvent: "touchcancel touchend touchenter touchleave touchmove touchstart",
-        TransitionEvent: "transitionend",
-        WheelEvent: "wheel"
-    };
 
     /**
      * @private
      */
     private static _lastId = 0;
 
+    /**
+     * Was used when server-rendering used: when component is already displayed but not started yet.
+     * @param $element
+     * @param componentClass
+     * @param params
+     */
     public static activatePrerendered( $element: JQuery, componentClass: Function, params: Object = {} ) {
 
         this._logger._space();
@@ -112,12 +81,18 @@ export default class Components {
 
     }
 
-    public static stopComponentsInNode( node: Element ): void {
-        // TODO: а не включить ли .add(node) сюда?
-        let $components = $(node).find('.VisualComponent');
-        _.forEach($components, (component) => {
-            $(<HTMLElement>component).model().__stop();
-        } );
+    public static async stopComponentsInNode( node: Element ): Promise<void> {
+
+        return new Promise<void>(function(resolve: Function) {
+            // TODO: а не включить ли .add(node) сюда?
+            // let $node = <JQuery><unknown>$(node);
+            // let $components = $node.find(this.visualComponentCssClass);
+            let $components = (<JQuery><unknown>$(node)).find(Components.visualComponentCssClass);
+            _.forEach($components, async (component) => {
+                await $(<HTMLElement>component).model().__stop();
+            } );
+            resolve();
+        });
     }
 
     /**
@@ -170,6 +145,10 @@ export default class Components {
         triggerEventRegister();
         mountComponentRegister();
 
+        this.plugins.forEach((plugin) => {
+            plugin.init(this.dispatcher);
+        });
+
         // debugger;
         console.log('init');
         // console.log(this._logger);
@@ -180,65 +159,6 @@ export default class Components {
         // this.jstTemplates = new JstTemplates();
         this.settings = new ComponentsSettings();
         this.dispatcher = new ComponentsEventDispatcher();
-
-        // @ts-ignore
-        this.dispatcher.addEventListener(Events.componentStarted, (e: CustomEvent<ComponentStartedEventInterface>) => {
-
-            if (!implementsInterface<KeyboardInterface>(e.detail.component, listenKeyboardInterface)) {
-                return;
-            }
-
-            this.logger.debug('HANDLER: Keyboard handlers activating for component '+Detect.className(e.detail.component));
-            if (this.keyboard) {
-                this.logger.debug('Keyboard is defined');
-                this.logger.debug(this.keyboard);
-                // this.keyboard.registerCombos(e.detail.componentId, e.detail.listenCombos);
-                // this.keyboard.registerCombos(e.detail.component.getId(), e.detail.listenCombos);
-                this.keyboard.registerCombos(e.detail.component.getId(), e.detail.component.listenKeyboard());
-            }
-        });
-
-        // @ts-ignore
-        this.dispatcher.addEventListener(Events.componentStarted, (e: CustomEvent<ComponentStartedEventInterface>) => {
-
-            // debugger;
-
-            if (!implementsInterface<ListenEventsInterface>(e.detail.component, listenEventsInterface)) {
-                // debugger;
-                return;
-            }
-
-            this.logger.debug('HANDLER: Event handlers activating for component '+Detect.className(e.detail.component));
-            let component: ListenEventsInterface  = e.detail.component;
-
-            if (this.TERMINATE_EVENTS) {
-
-                this.logger._minor( '[ BIND EVENTS ] Включено терминирование событий мыши по умолчанию.' );
-                component.$element().on( this.TERMINATE_EVENTS, ( e: Event ) => {
-
-                    if (!_.includes(['mousemove','mouseover','mouseout','mouseleave','mouseenter','mouseup','mousedown'], e.type)) {
-                        this.logger._minor('Event '+e.type+' terminated in '+component.getClass());
-                    }
-
-                    e.stopPropagation();
-
-                } );
-
-            }
-
-            let eventHandlers = component.listenEvents();
-            if (_.isEmpty( eventHandlers)) {
-                return;
-            }
-
-            $.each(eventHandlers, (eventName: string, handler: Function) => {
-                this.logger._minor( '[ BIND EVENTS ] Регистрация обработчика события: ' + eventName );
-                component.$element().off(eventName); // снимаем существующий обработчик, если был
-                // @ts-ignore
-                component.$element().on(eventName, handler);
-            } );
-
-        });
 
         this.keyboard = new Keyboard(new Keypress.Listener(<Element>document.getElementsByTagName('body').item(0)));
         if (window.keypress) {

@@ -1,5 +1,5 @@
 import NullLogger from "./NullLogger";
-import {LoggableType} from "./types/LoggableType";
+import {LoggableType} from "../types/LoggableType";
 
 export default class ConsoleLogger extends NullLogger {
 

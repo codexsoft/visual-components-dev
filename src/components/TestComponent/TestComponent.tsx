@@ -47,7 +47,7 @@ export default class TestComponent extends VisualComponent {
 
                 try {
                     // debugger;
-                    let renderPromise = await jsx.render();
+                    let renderPromise = await jsx.toHtml();
                     console.log('confirm:');
                     console.log(renderPromise);
 

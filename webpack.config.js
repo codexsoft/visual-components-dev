@@ -21,7 +21,7 @@ module.exports = {
     ],
     output: {
         path: path.resolve(__dirname, 'dist'),
-        filename: 'app.js'
+        filename: 'visual-components.js'
     },
     resolve: {
         // extensions: [ '.tsx', '.ts', '.js', '.css', '.less' ]

@@ -1,8 +1,8 @@
 import VisualComponent from "../../VisualComponent";
 import trigger from "../../shortcut-functions/trigger";
 import * as _ from "lodash";
-import KeyboardInterface from "../../KeyboardInterface";
 import ListenEventsInterface from "../../types/ListenEventsInterface";
+import KeyboardInterface from "../../plugin/KeypressPlugin/KeyboardInterface";
 
 export default class Common__Dialog__Confirm extends VisualComponent implements KeyboardInterface, ListenEventsInterface {
 
@@ -24,7 +24,7 @@ export default class Common__Dialog__Confirm extends VisualComponent implements 
         no: (e: Event) => this.signal('no'),
     };}
 
-    init() {
+    async init() {
 
         // TODO: а это сработает? Ведь init() в конструкторе вызывается!
         // А setDefault мы вызываем позже!

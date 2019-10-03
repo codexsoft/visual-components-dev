@@ -1,10 +1,10 @@
 import * as _ from "lodash";
 import * as $ from "jquery";
-import KeyboardInterface from "../../KeyboardInterface";
 import ListenEventsInterface from "../../types/ListenEventsInterface";
 import VisualComponent from "../../VisualComponent";
 import Signal from "../../Signal";
 import Components from "../../Components";
+import KeyboardInterface from "../../plugin/KeypressPlugin/KeyboardInterface";
 
 export default abstract class Common__Modal extends VisualComponent implements KeyboardInterface, ListenEventsInterface {
 
@@ -30,17 +30,16 @@ export default abstract class Common__Modal extends VisualComponent implements K
     protected abstract destroyModal(): void;
     protected abstract afterComponentMounted(renderedComponentElement: Element): void;
 
-    protected _signalHandleHook(signal: Signal) {
-        // if ( typeof Component.Common__Modal !== 'undefined' && this instanceof Component.Common__Modal ) {
+    protected async _signalHandleHook(signal: Signal): Promise<void> {
 
-
-        if ( _.includes(this.getTerminators(), signal.name) ) {
-            this.finish(); // закрываем модальное окно
-            // забываем про клавиатурные сочетания источника событий
-            Components.keyboard.unregisterCombosForComponent( signal.trigger.getId() );
+        if (!_.includes(this.getTerminators(), signal.name) ) {
+            return;
         }
 
-        // }
+        await this.finish(); // закрываем модальное окно
+
+        // забываем про клавиатурные сочетания источника событий
+        Components.keyboard.unregisterCombosForComponent(signal.trigger.getId());
     }
 
     listenKeyboard() {
@@ -121,11 +120,11 @@ export default abstract class Common__Modal extends VisualComponent implements K
      *
      * @param answer
      */
-    public finish( answer: any = null ) {
+    public async finish( answer: any = null ) {
 
         this.logger._minor('Finishing modal '+this.debugName()+'!..');
-        Components.stopComponentsInNode( this.component.element() );
-        this.component.__stop();
+        await Components.stopComponentsInNode( this.component.element() );
+        await this.component.__stop();
         this.destroyModal();
         this.killViewport();
         this.logger._minor('Modals should be removed...');

@@ -2,10 +2,10 @@ import * as _ from "lodash";
 import * as $ from "jquery";
 import Detect from "./Detect";
 import VisualComponent from "./VisualComponent";
-import LoggerInterface from "./LoggerInterface";
-import NullLogger from "./NullLogger";
 import {JsxRenderResultType} from "./types/JsxRenderResultType";
-import ConsoleLogger from "./ConsoleLogger";
+import NullLogger from "./logger/NullLogger";
+import ConsoleLogger from "./logger/ConsoleLogger";
+import LoggerInterface from "./logger/LoggerInterface";
 
 export default class JsxArray {
 
@@ -64,7 +64,7 @@ export default class JsxArray {
 
     }
 
-    public async render(): Promise<JsxRenderResultType> {
+    public async toHtml(): Promise<JsxRenderResultType> {
         return new Promise<HTMLElement>(async (resolve: Function, reject: Function) => {
 
             // debugger;
@@ -230,7 +230,7 @@ export default class JsxArray {
             iterator++;
         });
 
-        let rendered = await (new JsxArray('component', {}, result)).render();
+        let rendered = await (new JsxArray('component', {}, result)).toHtml();
 
         return this.resolve(rendered);
     }
@@ -264,7 +264,7 @@ export default class JsxArray {
             let result = thenClosure();
 
             // let rendered = await this.renderJsxArray('component',{},result);
-            let rendered = await (new JsxArray('component', {}, result)).render();
+            let rendered = await (new JsxArray('component', {}, result)).toHtml();
 
             return this.resolve( rendered );
         }
@@ -339,7 +339,7 @@ export default class JsxArray {
                 return this.resolve($(result).get(0));
             }
 
-            let rendered = await (new JsxArray(result)).render();
+            let rendered = await (new JsxArray(result)).toHtml();
 
             // вычисляем значение аттрибута CSS-классов
             if (this.attributes['class']) {
@@ -478,13 +478,13 @@ export default class JsxArray {
                         pendingRenderingElements.push(elem);
                     } );
                 } else {
-                    pendingRenderingElements.push((new JsxArray(childNode).render()));
+                    pendingRenderingElements.push((new JsxArray(childNode).toHtml()));
                     // pendingRenderingElements.push(await this.renderJsxArray(childNode));
 
                 }
 
             } else if (childNode instanceof VisualComponent) {
-                pendingRenderingElements.push((new JsxArray(childNode).render()));
+                pendingRenderingElements.push((new JsxArray(childNode).toHtml()));
                 // pendingRenderingElements.push(await this.renderJsxArray(childNode));
                 // pendingRenderingElements.push( jsx(childNode) );
             }

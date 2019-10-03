@@ -1,21 +1,36 @@
-import {LoggableType} from "./types/LoggableType";
+import {LoggableType} from "../types/LoggableType";
 
 export default interface LoggerInterface {
     _log(message: any): void;
+
     _info(message: any): void;
+
     _major(message: any): void;
+
     _notice(message: any): void;
+
     _warn(message: any): void;
+
     _error(message: string): void;
+
     _timenotice(message: string): void;
+
     _timeminor(message: string): void;
+
     _timeinfo(message: string): void;
+
     _timewarn(message: string): void;
+
     _timeerror(message: string): void;
+
     _group(message: string, collapsed?: boolean): void;
+
     _close(): void;
+
     _clean(): void;
-    _minor(message: string|any): void;
+
+    _minor(message: string | any): void;
+
     _space(): void;
 
     /**

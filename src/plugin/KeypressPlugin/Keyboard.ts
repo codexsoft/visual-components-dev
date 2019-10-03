@@ -1,8 +1,8 @@
-import VisualComponent from "./VisualComponent";
-import * as Keypress from 'keypress.js';
+import LoggerInterface from "../../logger/LoggerInterface";
+import NullLogger from "../../logger/NullLogger";
+import VisualComponent from "../../VisualComponent";
 import * as _ from "lodash";
-import LoggerInterface from "./LoggerInterface";
-import NullLogger from "./NullLogger";
+import {VisualComonentIdentificator} from "../../Components";
 
 export default class Keyboard {
 
@@ -13,7 +13,7 @@ export default class Keyboard {
      * Используется нотация keypress
      * @type {Array}
      */
-    private combos: string[]|any = [];
+    private combos: string[] | any = [];
 
     // private preventDefaultValue = true;
 
@@ -39,54 +39,54 @@ export default class Keyboard {
     /**
      * @private
      */
-    private _focused: VisualComponent|null = null;
+    private _focused: VisualComponent | null = null;
 
     constructor(listener: Keypress.Listener, logger?: LoggerInterface) {
         this.listener = listener;
         this.logger = logger || new NullLogger();
     }
 
-    public focused(): VisualComponent|null {
+    public focused(): VisualComponent | null {
         // TODO: текущий компонент используется только для клавиатурных сочетаний
         return this._focused;
     }
 
-    public focusOn( component: VisualComponent ) {
+    public focusOn(component: VisualComponent) {
 
         // noinspection SuspiciousTypeOfGuard
-        if ( component instanceof VisualComponent ) {
-            if ( this._focused ) {
-                this._focused.$element().removeClass( 'keyboardFocused' );
+        if (component instanceof VisualComponent) {
+            if (this._focused) {
+                this._focused.$element().removeClass('keyboardFocused');
             }
             component.$element().addClass('keyboardFocused');
-            this.logger._minor('[KEYBOARD] Считыватель клавиатуры сфокусирован на компоненте '+component.debugName());
+            this.logger._minor('[KEYBOARD] Считыватель клавиатуры сфокусирован на компоненте ' + component.debugName());
             this._focused = component;
         }
     }
 
-    public unfocus( component: VisualComponent ) {
-        if ( this._focused === component )
+    public unfocus(component: VisualComponent) {
+        if (this._focused === component)
             this._focused = null;
     }
 
-    public unregisterCombosForComponent(componentId: number) {
+    public unregisterCombosForComponent(componentId: VisualComonentIdentificator) {
 
-        this.logger._minor('Забываем про клавиатурные сочетания компонента с id = '+componentId);
-        _.forEach(this._callbacks, ( comboListeners, combo ) => {
+        this.logger._minor('Забываем про клавиатурные сочетания компонента с id = ' + componentId);
+        _.forEach(this._callbacks, (comboListeners, combo) => {
 
-            this.logger._minor('Забываем про сочетание '+combo+' компонента '+componentId);
+            this.logger._minor('Забываем про сочетание ' + combo + ' компонента ' + componentId);
 
             delete this._callbacks[combo][componentId];
 
-            if ( !this._callbacks[combo].length ) {
+            if (!this._callbacks[combo].length) {
 
                 delete this._callbacks[combo];
 
-                if ( combo in this.combos )
+                if (combo in this.combos) {
                     delete this.combos[combo];
+                }
 
                 this.listener.unregister_combo(combo);
-
             }
 
         });
@@ -94,11 +94,11 @@ export default class Keyboard {
 
     }
 
-    public handle(combo: string, e: KeyboardEvent){
+    public handle(combo: string, e: KeyboardEvent) {
 
-        this.logger._minor('[ KEYBOARD ] Зарегистрировано событие: комбинация клавиш: '+combo);
+        this.logger._minor('[ KEYBOARD ] Зарегистрировано событие: комбинация клавиш: ' + combo);
 
-        if ( !_.includes(this.combos, combo) ) {
+        if (!_.includes(this.combos, combo)) {
             this.logger._log('Нет обработчика для этой комбинации!');
             return;
         }
@@ -117,8 +117,8 @@ export default class Keyboard {
         let continueBubbling = false;
 
         while (component instanceof VisualComponent) {
-            if ( this._callbacks[combo] && this._callbacks[combo][component.getId()] ) {
-                this.logger._log('Обработчик комбинации найден у компонента с id = '+component.getId()+'!');
+            if (this._callbacks[combo] && this._callbacks[combo][component.getId()]) {
+                this.logger._log('Обработчик комбинации найден у компонента с id = ' + component.getId() + '!');
                 this.logger._log(component);
                 continueBubbling = this._callbacks[combo][component.getId()]();
                 if (!continueBubbling) break;
@@ -139,7 +139,7 @@ export default class Keyboard {
      */
     public registerCombos(componentId: number, combosx: {[index: string]: Function}) {
 
-        if ( _.isEmpty(combosx) ) return;
+        if (_.isEmpty(combosx)) return;
 
         // this.init();
 
@@ -167,15 +167,15 @@ export default class Keyboard {
             this.combos.push(combo);
         }
 
-        this.logger._minor('[ KEYBOARD ]: Добавлена комбинация клавиш для прослушки компонентом '+componentId+': ['+combo+']');
+        this.logger._minor('[ KEYBOARD ]: Добавлена комбинация клавиш для прослушки компонентом ' + componentId + ': [' + combo + ']');
         this.listener.simple_combo(combo, (e?: KeyboardEvent): boolean => {
             if (e instanceof KeyboardEvent) {
-                this.handle( combo, e );
+                this.handle(combo, e);
             }
             return true;
         });
 
-        if ( !this._callbacks[combo] ) this._callbacks[combo] = {};
+        if (!this._callbacks[combo]) this._callbacks[combo] = {};
         this._callbacks[combo][componentId] = handlerFunction;
 
     }

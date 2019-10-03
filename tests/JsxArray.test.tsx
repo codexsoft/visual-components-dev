@@ -60,7 +60,7 @@ test('basic', async () => {
 
     tests.forEach(async (el: testCase, index, arr) => {
         let jsx = new JsxArray(el.jsx);
-        let html = await jsx.render();
+        let html = await jsx.toHtml();
         expect(html.outerHTML).toBe(el.result);
     });
 
