@@ -1,1 +1,2 @@
-export type ComponentRenderResultType = Promise<any[]|string>|any[]|string;
+export type ComponentRenderResultType = any[]|string;
+// export type ComponentRenderResultType = Promise<any[]|string>;

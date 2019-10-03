@@ -61,7 +61,7 @@ export default abstract class Common__Modal extends VisualComponent implements K
         refresh: () => { this.reRender(); return false; },
     };}
 
-    async activateAsync(): Promise<any> {
+    async activate(): Promise<any> {
         return new Promise(async (resolve: Function, reject: Function) => {
             // debugger;
             await this.$element().find('div.component').mountComponent(this.component);

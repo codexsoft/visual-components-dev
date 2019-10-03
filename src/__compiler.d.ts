@@ -5,3 +5,5 @@ declare namespace JSX {
     }
 
 }
+
+// declare function $(...arguments: any[]): JQueryStatic;

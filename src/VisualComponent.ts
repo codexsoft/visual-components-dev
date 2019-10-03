@@ -11,14 +11,9 @@ import ComponentLifecycleEventInterface from "./events/ComponentLifecycleEventIn
 import {ComponentRenderResultType} from "./types/ComponentRenderResultType";
 import NullLogger from "./logger/NullLogger";
 import LoggerInterface from "./logger/LoggerInterface";
-// import {RenderResultType} from "./types/RenderResultType";
+import {JsxRenderResultType} from "./types/JsxRenderResultType";
 
 export default abstract class VisualComponent {
-
-    // public static readonly class: string = __CLASS__;
-    // private readonly class: string = __CLASS__;
-
-    // [key: string]: any;
 
     protected logger: LoggerInterface = new NullLogger();
 
@@ -38,13 +33,6 @@ export default abstract class VisualComponent {
      * DOM-элемент, с которым связана модель этого визуального компонента
      */
     private _element: HTMLElement|undefined = undefined;
-
-    // /**
-    //  * какие события мыши терминировать по умолчанию в этом компоненте?
-    //  * например, DOMEvents.MouseEvent;
-    //  * @type {string}
-    //  */
-    // protected TERMINATE_EVENTS: string = '';
 
     /**
      * ID визуального компонента, назначенный в браузере
@@ -74,6 +62,8 @@ export default abstract class VisualComponent {
             }
         }
 
+        this.logger = Components.logger;
+
         this.logger.info( 'Сконструирован компонент ' + this.debugName() );
         this._configurate( parameters ); // todo: really needed?
         this.logger.debug( 'Инициализация компонента ' + this.debugName() );
@@ -92,29 +82,6 @@ export default abstract class VisualComponent {
      * @param parameters
      */
     protected async init(parameters: Object): Promise<void> {
-    }
-
-    protected exportData() {
-        let exportObj: any = {};
-        _.forEach( this, ( value, key ) => {
-
-            if (_.includes([
-                    'id',
-                    'isSimple',
-                    '_jsxProvidedChildren',
-                    '_jsxProvidedAttributes',
-                    '_element',
-                    '__cachedDetectedClassname',
-                    // 'USE_WARE',
-                    // 'TERMINATE_EVENTS',
-                    // 'props',
-                    // 'selfUrl',
-                    'layout',
-                ], key)) return;
-            exportObj[key] = value;
-
-        });
-        return exportObj;
     }
 
     /**
@@ -146,10 +113,12 @@ export default abstract class VisualComponent {
     }
 
 
+    // noinspection JSUnusedGlobalSymbols
     protected jsxProvidedChildren(): any[] {
         return this._jsxProvidedChildren;
     }
 
+    // noinspection JSUnusedGlobalSymbols
     /**
      *
      * @returns {Object}
@@ -263,41 +232,6 @@ export default abstract class VisualComponent {
         return staticClass ? staticClass : false;
     }
 
-    /*
-    private __startListenEvents() {
-
-        return;
-
-        if (this.TERMINATE_EVENTS) {
-
-            this.logger._minor( '[ BIND EVENTS ] Включено терминирование событий мыши по умолчанию.' );
-            this.$element().on( this.TERMINATE_EVENTS, ( e: Event ) => {
-
-                if (!_.includes(['mousemove','mouseover','mouseout','mouseleave','mouseenter','mouseup','mousedown'], e.type)) {
-                    this.logger._minor('Event '+e.type+' terminated in '+this.getClass());
-                }
-
-                e.stopPropagation();
-
-            } );
-
-        }
-
-        let eventHandlers = this.listenEvents();
-        if (_.isEmpty( eventHandlers)) {
-            return;
-        }
-
-        $.each(eventHandlers, (eventName: string, handler: Function) => {
-            this.logger._minor( '[ BIND EVENTS ] Регистрация обработчика события: ' + eventName );
-            this.$element().off(eventName); // снимаем существующий обработчик, если был
-            // @ts-ignore
-            this.$element().on(eventName, handler);
-        } );
-
-    }
-    */
-
     /**
      * После рендеринга содержимого, нужно повесить на component.Element слушальщики событий,
      * сообщений, сигналов и клавиатурных сочетаний. Кроме того, выполняется пользовательский
@@ -305,20 +239,15 @@ export default abstract class VisualComponent {
      */
     public async __start() {
 
-        this.logger._minor('Активация компонента '+this.debugName());
+        this.logger.debug('Старт компонента '+this.debugName());
 
         Components.dispatcher.dispatchEvent(Events.create<ComponentLifecycleEventInterface>(Events.componentBeforeStart, {
             component: this
         }));
 
-        // this.id, this.listenKeyboard(), this));
-        // this.__startListenEvents();
-
-        // Components.keyboard.registerCombos(this.id, this.listenKeyboard());
-
         // executing custom activation code
-        await this.activateAsync();
-        this.activate();
+        this.logger.debug('Активация компонента '+this.debugName());
+        await this.activate();
 
         Components.dispatcher.dispatchEvent(Events.create<ComponentLifecycleEventInterface>(Events.componentAfterStart, {
             component: this
@@ -338,7 +267,7 @@ export default abstract class VisualComponent {
 
         await Components.stopComponentsInNode(this.element());
         this.killViewport();
-        await this.deactivateAsync();
+        await this.deactivate();
 
         Components.dispatcher.dispatchEvent(Events.create<ComponentLifecycleEventInterface>(Events.componentAfterStop, {
             component: this
@@ -348,7 +277,7 @@ export default abstract class VisualComponent {
     /**
      * Custom component deactivation code
      */
-    protected async deactivateAsync(): Promise<void> {
+    protected async deactivate(): Promise<void> {
         // return;
         // return new Promise(async (resolve: Function) => { resolve(); });
     }
@@ -366,11 +295,7 @@ export default abstract class VisualComponent {
      * In the event a Deferred was resolved with no value, the corresponding doneCallback argument
      * will be undefined.
      */
-    protected async activateAsync(): Promise<void> {
-        return new Promise(async (resolve: Function) => { resolve(); });
-    }
-
-    protected activate(): void {
+    protected async activate(): Promise<void> {
     }
 
     /**
@@ -379,7 +304,7 @@ export default abstract class VisualComponent {
      * @param foundAncestors array
      * @returns array
      */
-    public getAncestors(foundAncestors: string[] = []) {
+    public getAncestorsClasses(foundAncestors: string[] = []): string[] {
 
         // @ts-ignore
         if ( !this['__proto__'] || !this['__proto__'].constructor ) {
@@ -396,8 +321,8 @@ export default abstract class VisualComponent {
 
         foundAncestors.push(proto.constructor.name);
 
-        return proto.getAncestors
-            ? proto.getAncestors(foundAncestors)
+        return proto.getAncestorsClasses
+            ? proto.getAncestorsClasses(foundAncestors)
             : foundAncestors;
     }
 
@@ -424,13 +349,6 @@ export default abstract class VisualComponent {
 
     }
 
-    // /**
-    //  * Привязка обработчиков клавиатурных сочетаний keypress
-    //  */
-    // listenKeyboard(): Object {
-    //     return {};
-    // }
-
     /**
      * Для получения сообщений из IFRAME-ов
      * TODO: возможно, актуальна только в контексте всего документа, а не компонента
@@ -438,18 +356,6 @@ export default abstract class VisualComponent {
     protected listenMessages(): Object {
         return {};
     }
-
-    // /**
-    //  * Скомпилировать JST-шаблон
-    //  * TODO: а не следует ли возвращать HTMLElement?
-    //  * @returns {string}
-    //  */
-    // protected renderJsTemplate( templateName: string, parameters: Object = {} ): string {
-    //     let templateId = 'template_jst_'+this.getClass()+'_'+templateName;
-    //     let templateString = $('#'+templateId).html();
-    //
-    //     return Components.jstTemplates.render(templateString, this, parameters);
-    // }
 
     /**
      * При рендеринге может быть использован метод компонента вроде this.layout_default();
@@ -483,7 +389,7 @@ export default abstract class VisualComponent {
 
     public createContainerElement(): HTMLElement {
         let $container = $('<div>');
-        this.getAncestors().forEach(function (ancestorClass: string) {
+        this.getAncestorsClasses().forEach(function (ancestorClass: string) {
             $container.addClass(ancestorClass);
         });
 
@@ -491,30 +397,36 @@ export default abstract class VisualComponent {
     }
 
     // noinspection JSMethodCanBeStatic
-    private elementIsJsxWrapper(element: Node): boolean {
+    private elementIsJsxWrapper(element: Node): element is HTMLElement {
         // @ts-ignore
         return (element.tagName !== undefined) && (_.includes(['COMPONENT'], element.tagName));
     }
 
-    public async display(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element|Comment> {
+    // public async display(options: VisualComponentDisplayOptionsInterface = {}): Promise<Element|Comment> {
+    public async display(options: VisualComponentDisplayOptionsInterface = {}): Promise<JsxRenderResultType> {
 
         this.logger.debug('Displaying '+this.getClass()+' visual component');
         // console.log(this.logger);
 
         this.importDisplayVars(options);
         let beforeRenderResult: any = await this.beforeRender();
-        let content: any[]|string = await this.render(beforeRenderResult);
+        let content: ComponentRenderResultType = await this.render(beforeRenderResult);
 
-        return new Promise<Element|Comment>(async (resolve: Function, reject: Function) => {
+        // return new Promise<Element|Comment>(async (resolve: Function, reject: Function) => {
+        return new Promise<JsxRenderResultType>(async (resolve: Function, reject: Function) => {
 
             // debugger;
             if (_.isArray(content)) { // JSX array-based render
 
-                let resultElement = await (new JsxArray(<any[]>content)).toHtml();
+                let resultElement = await (new JsxArray(content)).toHtml();
 
                 if (this.displayWithoutContainer) {
+
                     // simple case, used for components like form elements
                     Components.tie(resultElement, this);
+                    await this.__start(); // опции?
+                    return resolve(resultElement);
+
                 } else {
 
                     let container = this.createContainerElement();
@@ -528,7 +440,7 @@ export default abstract class VisualComponent {
                         if (contents.length === 1) {
                             let firstElement = contents.get(0);
                             if (this.elementIsJsxWrapper(firstElement)) {
-                                resultElement = <HTMLElement>firstElement;
+                                resultElement = firstElement;
                             }
                         }
 
@@ -549,14 +461,13 @@ export default abstract class VisualComponent {
                         $(container).append(resultElement);
                     }
 
-                    Components.tie( container, this );
+                    Components.tie(container, this);
                     await this.__start(); // опции?
 
-                    resolve( container );
-
+                    return resolve(container);
                 }
 
-                return;
+
             }
 
             /**
@@ -597,17 +508,11 @@ export default abstract class VisualComponent {
      * todo: should be protected, but currently used by $.assignComponentToPrerendered
      * @returns {boolean}
      */
-    public beforeRender(): any {
+    public async beforeRender(): Promise<any> {
         return;
     }
 
-    public abstract render(params?: {[index: string]: any}): ComponentRenderResultType;
-    /*
-    public render(params?: {[index: string]: any}): Promise<any[]|string>|any[]|string {
-        // by default, rendering via backend...
-        return this.renderViaBackend();
-    }
-    */
+    public abstract async render(params?: {[index: string]: any}): Promise<ComponentRenderResultType>;
 
     /**
      * Shortcut для доступа к элементу компонента, обернутому в JQuery
@@ -639,13 +544,11 @@ export default abstract class VisualComponent {
         return <HTMLElement>this.element();
     }
 
+    /**
+     * just a shortcut
+     */
     public findParentComponent(): VisualComponent|null {
-
-        let $self = this.$element();
-
-        let $parentComponent = $self.parent().closest( '.VisualComponent' );
-        return $parentComponent.length ? $parentComponent.get(0).model : null;
-
+        return Components.findParentComponent(this);
     }
 
     public debugName() {
@@ -781,5 +684,40 @@ export default abstract class VisualComponent {
     protected listenSignals(): {[index: string]: Function} {
         return {};
     };
+
+    protected exportData() {
+        let exportObj: any = {};
+        _.forEach( this, ( value, key ) => {
+
+            if (_.includes([
+                'id',
+                'isSimple',
+                '_jsxProvidedChildren',
+                '_jsxProvidedAttributes',
+                '_element',
+                '__cachedDetectedClassname',
+                // 'USE_WARE',
+                // 'TERMINATE_EVENTS',
+                // 'props',
+                // 'selfUrl',
+                'layout',
+            ], key)) return;
+            exportObj[key] = value;
+
+        });
+        return exportObj;
+    }
+
+    // /**
+    //  * какие события мыши терминировать по умолчанию в этом компоненте?
+    //  * например, DOMEvents.MouseEvent;
+    //  * @type {string}
+    //  */
+    // protected TERMINATE_EVENTS: string = '';
+
+    // public static readonly class: string = __CLASS__;
+    // private readonly class: string = __CLASS__;
+
+    // [key: string]: any;
 
 }

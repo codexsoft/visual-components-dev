@@ -137,7 +137,7 @@ export default class Keyboard {
      * @param componentId
      * @param combosx
      */
-    public registerCombos(componentId: number, combosx: {[index: string]: Function}) {
+    public registerCombos(componentId: VisualComonentIdentificator, combosx: {[index: string]: Function}) {
 
         if (_.isEmpty(combosx)) return;
 
@@ -161,7 +161,7 @@ export default class Keyboard {
      * @param componentId
      * @param handlerFunction
      */
-    public addComboListener(combo: string, componentId: number, handlerFunction: Function) {
+    public addComboListener(combo: string, componentId: VisualComonentIdentificator, handlerFunction: Function) {
 
         if (!_.includes(this.combos, combo)) {
             this.combos.push(combo);

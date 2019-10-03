@@ -11,7 +11,7 @@ import {ComponentRenderResultType} from "../../types/ComponentRenderResultType";
 export default class TestComponent extends VisualComponent {
 
     // protected activate(): void {
-    protected async activateAsync(): Promise<void> {
+    activate(): Promise<void> {
 
         return new Promise(async (resolve: Function) => {
 
@@ -111,7 +111,7 @@ export default class TestComponent extends VisualComponent {
         */
     }
 
-    render(params?: {[p: string]: any}): ComponentRenderResultType {
+    render(params?: {[p: string]: any}) {
 
         // return 'COOL';
         // console.log('test CSS module...');
