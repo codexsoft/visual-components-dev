@@ -5,7 +5,8 @@ const MiniCssExtractPlugin = require('mini-css-extract-plugin');
 module.exports = {
     devtool: "source-map",
     mode: 'production', // development|production
-    entry: './src/index.tsx',
+    // entry: './src/index.tsx',
+    entry: './src/demo.tsx',
     // plugins: [
     //     new ExtractTextPlugin("styles.css"),
     // ],

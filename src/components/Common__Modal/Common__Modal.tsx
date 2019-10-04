@@ -5,6 +5,7 @@ import VisualComponent from "../../VisualComponent";
 import Signal from "../../Signal";
 import Components from "../../Components";
 import KeyboardInterface from "../../plugin/KeypressPlugin/KeyboardInterface";
+import {signal} from "../../plugin/SignalsPlugin/SignalsPlugin";
 
 export default abstract class Common__Modal extends VisualComponent implements KeyboardInterface, ListenEventsInterface {
 
@@ -16,7 +17,7 @@ export default abstract class Common__Modal extends VisualComponent implements K
     // @ts-ignore
     protected component: VisualComponent;
 
-    protected _signals = {};
+    protected _signalHandlers: {[index: string]: Function} = {};
 
     /**
      * названия сигналов, после обработки которых нужно завершать диалог
@@ -39,12 +40,12 @@ export default abstract class Common__Modal extends VisualComponent implements K
         await this.finish(); // закрываем модальное окно
 
         // забываем про клавиатурные сочетания источника событий
-        Components.keyboard.unregisterCombosForComponent(signal.trigger.getId());
+        // Components.keyboard.unregisterCombosForComponent(signal.trigger.getId());
     }
 
     listenKeyboard() {
         return {
-            esc: () => { this.finish(); this.signal('cancelled'); return false; },
+            esc: () => { this.finish(); signal(this, 'cancelled'); return false; },
         }
     }
 
@@ -57,7 +58,7 @@ export default abstract class Common__Modal extends VisualComponent implements K
      * Обработка событий внутри компонента
      */
     listenEvents() { return {
-        cancel: () => { this.finish(); this.signal('cancelled'); return false; },
+        cancel: () => { this.finish(); signal(this, 'cancelled'); return false; },
         refresh: () => { this.reRender(); return false; },
     };}
 
@@ -65,7 +66,7 @@ export default abstract class Common__Modal extends VisualComponent implements K
         return new Promise(async (resolve: Function, reject: Function) => {
             // debugger;
             await this.$element().find('div.component').mountComponent(this.component);
-            Components.keyboard.focusOn( this.component );
+            // Components.keyboard.focusOn(this.component); // todo: how to do it instead?
             resolve();
         });
     }
@@ -84,8 +85,8 @@ export default abstract class Common__Modal extends VisualComponent implements K
         return this;
     }
 
-    public setSignalHandlers( signalHandlers: Object ) {
-        this._signals = signalHandlers;
+    public setSignalHandlers(signalHandlers: {[index: string]: Function}) {
+        this._signalHandlers = signalHandlers;
         return this;
     }
 
@@ -94,7 +95,7 @@ export default abstract class Common__Modal extends VisualComponent implements K
      * Если сигнал будет пойман, модальное окно по умолчанию будет закрыто
      */
     listenSignals() {
-        return this._signals;
+        return this._signalHandlers;
     }
 
     public afterFinish(): void {
@@ -128,18 +129,18 @@ export default abstract class Common__Modal extends VisualComponent implements K
         this.destroyModal();
         this.killViewport();
         this.logger._minor('Modals should be removed...');
-        Components.keyboard.unregisterCombosForComponent(this.id);
+        // Components.keyboard.unregisterCombosForComponent(this.id); // todo: how to do it instead?
         // debugger;
         // this.signal('cancel');
 
         this.afterFinish();
 
         // возвращаем клавиатурный фокус компоненту-инициатору
-        Components.keyboard.focusOn( this.parentComponent );
+        // Components.keyboard.focusOn( this.parentComponent ); // todo: how to do it instead?
 
     }
 
-    public async fire( signalHandlers: Object = {}, terminators = [] ) {
+    public async fire( signalHandlers: {[index: string]: Function} = {}, terminators = [] ) {
 
         this._terminators = terminators;
 

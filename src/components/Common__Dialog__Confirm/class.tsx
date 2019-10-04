@@ -3,6 +3,7 @@ import trigger from "../../shortcut-functions/trigger";
 import * as _ from "lodash";
 import ListenEventsInterface from "../../types/ListenEventsInterface";
 import KeyboardInterface from "../../plugin/KeypressPlugin/KeyboardInterface";
+import {signal} from "../../plugin/SignalsPlugin/SignalsPlugin";
 
 export default class Common__Dialog__Confirm extends VisualComponent implements KeyboardInterface, ListenEventsInterface {
 
@@ -13,25 +14,28 @@ export default class Common__Dialog__Confirm extends VisualComponent implements 
     listenKeyboard() { return {
         left: () => this.focusOnYes(),
         right: () => this.focusOnNo(),
-        esc: () => this.signal( 'no' ),
-        enter: () => { this.signal( this.isFocusedOnConfirm ? 'yes' : 'no' ); },
+        esc: () => signal(this, 'no'),
+        // enter: () => { this.signal( this.isFocusedOnConfirm ? 'yes' : 'no' ); },
+        enter: () => {signal(this, this.isFocusedOnConfirm ? 'yes' : 'no' ); },
     }; }
     // }, super.listenKeyboard()); }
 
     listenEvents() { return {
         // yes: (e: Event) => this.signal('yes'),
-        yes: (e: Event) => {console.log('signal YES'); this.signal('yes')},
-        no: (e: Event) => this.signal('no'),
+        // yes: (e: Event) => {console.log('signal YES'); this.signal('yes')},
+        yes: (e: Event) => {console.log('signal YES'); signal(this, 'yes')},
+        no: (e: Event) => signal(this, 'no'),
     };}
 
-    async init() {
-
+    protected async activate(): Promise<void> {
         // TODO: а это сработает? Ведь init() в конструкторе вызывается!
         // А setDefault мы вызываем позже!
         this.confirmIsDefault
             ? this.focusOnYes()
             : this.focusOnNo();
+    }
 
+    async init() {
     }
 
     private focusOnNo() {

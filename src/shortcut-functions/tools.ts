@@ -102,7 +102,7 @@ export function swapNodes(elm1: Node, elm2: Node) {
  */
 export function fireCustomEvent(element: HTMLElement, eventName: string, params: Object = {}) {
     // if (!_.isEmpty(params))
-    // le.console.log(params);
+    console.log(params);
 
     // @ts-ignore
     if (document.createEventObject) { // Реализация события в IE

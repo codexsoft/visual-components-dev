@@ -7,7 +7,6 @@ import ComponentsSettings from "./ComponentsSettings";
 import ComponentsEventDispatcher from "./ComponentsEventDispatcher";
 import ComponentLifecycleEventInterface from "./events/ComponentLifecycleEventInterface";
 import Events from "./events/Events";
-import {implementsInterface} from "./shortcut-functions/implements";
 import ListenEventsInterface, {listenEventsInterface} from "./types/ListenEventsInterface";
 import triggerEventRegister from './jquery-functions/triggerEvent';
 import mountComponentRegister from './jquery-functions/mountComponent';
@@ -43,6 +42,7 @@ export default class Components {
         this._logger = value;
     }
 
+    /** @deprecated */
     public static keyboard: Keyboard;
     // public static jstTemplates: JstTemplates;
     public static dispatcher: ComponentsEventDispatcher;
@@ -145,10 +145,6 @@ export default class Components {
         triggerEventRegister();
         mountComponentRegister();
 
-        this.plugins.forEach((plugin) => {
-            plugin.init(this.dispatcher);
-        });
-
         // debugger;
         console.log('init');
         // console.log(this._logger);
@@ -160,8 +156,14 @@ export default class Components {
         this.settings = new ComponentsSettings();
         this.dispatcher = new ComponentsEventDispatcher();
 
-        this.keyboard = new Keyboard(new Keypress.Listener(<Element>document.getElementsByTagName('body').item(0)));
-        if (window.keypress) {
+        this.plugins.forEach((plugin) => {
+            this.logger.debug('Initialization of plugin');
+            this.logger.debug(plugin);
+            plugin.init(this.dispatcher);
+        });
+
+        // this.keyboard = new Keyboard(new Keypress.Listener(<Element>document.getElementsByTagName('body').item(0)));
+        // if (window.keypress) {
             // @ts-ignore
             // this.keyboard = new Keyboard(new window.keypress.Listener(document.getElementsByTagName('body').item(0)));
             // this.keyboard = new Keyboard(new Keypress.Listener(document.getElementsByTagName('body').item(0)));
@@ -181,7 +183,7 @@ export default class Components {
             });
             */
 
-        }
+        // }
 
     }
 

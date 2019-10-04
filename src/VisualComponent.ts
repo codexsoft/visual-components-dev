@@ -178,21 +178,21 @@ export default abstract class VisualComponent {
         $(document).triggerEvent('ready');
     }
 
-    /**
-     * задать фокусировку keypress на этот компонент
-     * может все-таки использовать le.keyboard.focusOn?
-     * А то это жесткая привязка к модулю keypress
-     */
-    protected setFocus(): void {
-        Components.keyboard.focusOn(this);
-    }
+    // /**
+    //  * задать фокусировку keypress на этот компонент
+    //  * может все-таки использовать le.keyboard.focusOn?
+    //  * А то это жесткая привязка к модулю keypress
+    //  */
+    // protected setFocus(): void {
+    //     Components.keyboard.focusOn(this);
+    // }
 
-    /**
-     * снять фокусировку keypress с этого компонента
-     */
-    protected unfocus(): void {
-        Components.keyboard.unfocus(this);
-    }
+    // /**
+    //  * снять фокусировку keypress с этого компонента
+    //  */
+    // protected unfocus(): void {
+    //     Components.keyboard.unfocus(this);
+    // }
 
     protected killViewport(): void {
         this._element = undefined;
@@ -569,29 +569,6 @@ export default abstract class VisualComponent {
     //     return {};
     // }
 
-    /**
-     * Отправить сигнал на обработку вышестоящим визуальным компонентам
-     * Бросить сигнал вверх для дальнейшей обработки родительскими компонентами
-     * Может быть использован для того, чтобы выполнить какие-то действия перед проксированием
-     */
-    public _signalBubble( signal: Signal ) {
-
-        this.logger._minor( 'Всплытие сигнала вверх...' );
-
-        let parentModel = Components.findParentComponent(this);
-
-        try {
-            ensure(parentModel, 'Родительский компонент не обнаружен!');
-        } catch ( e ) {
-            this.logger._error( e.message );
-            return;
-        }
-
-        if (parentModel instanceof VisualComponent) {
-            parentModel._signalHandle( signal );
-        }
-    }
-
     // /**
     //  * Отрисовка компонента через JST-шаблон
     //  * @param layoutName
@@ -609,81 +586,6 @@ export default abstract class VisualComponent {
     protected async reRender(): Promise<void> {
         await this.$element().mountComponent(this, {mode: 'replace'});
     }
-
-    protected signalCustomHandler(s: Signal): boolean|null {
-        return null;
-    }
-
-    protected async _signalHandleHook(signal: Signal): Promise<void> {
-
-    }
-
-    /**
-     * Обработать сигнал
-     */
-    protected _signalHandle(signal: Signal): void {
-
-        signal.trip.push(this);
-        let continueBubbling = true; // bubbling by default!
-        // let handlerMethodName: string = 'on_' + signal.name;
-
-        // if (this[handlerMethodName]) {
-        //
-        //     this.logger.info('Handling signal in component ' + this.debugName() + ' via method ' + handlerMethodName );
-        //     continueBubbling = this[handlerMethodName](signal); // will be undefined by default!
-        //
-        // } else if ( this.listenSignals()[signal.name] ) {
-        if ( this.listenSignals()[signal.name] ) {
-
-            // TODO: call trigger callback?
-            this._signalHandleHook(signal);
-            continueBubbling = this.listenSignals()[signal.name].call(this, signal);
-
-        } else {
-
-            this.logger._minor( 'Handling signal by customSignalHandler in ' + this.debugName() );
-            let customResult = this.signalCustomHandler(signal);
-            if (customResult !== null) {
-                continueBubbling = customResult;
-            } else {
-                this.logger._minor('Signal handler not set in '+this.debugName());
-            }
-        }
-
-        if ( continueBubbling ) {
-            this._signalBubble( signal );
-        } else {
-            this.logger._minor( 'Signal '+signal.name+' bubbling stopped!' );
-        }
-
-    }
-
-    /**
-     * Сгенерировать сигнал
-     * TODO: может сделать третий параметр callback - чтобы вызывать его
-     * когда сигнал будет обработан?
-     * @param name
-     * @param data
-     */
-    protected signal(name: string, data: Object = {}): boolean {
-
-        let signal = new Signal(name, this);
-        signal.data = data;
-        this.logger._log( 'Signal "' + name + '" '+JSON.stringify(data)+' fired in '+this.debugName()+'!' );
-
-        this._signalHandle( signal );
-
-        // для удобства в использовании при конвертации события в сигнал и прекращения обработки события
-        return false;
-    }
-
-    /**
-     * Сигналы, которые умеет обрабатывать компонент
-     * @public
-     */
-    protected listenSignals(): {[index: string]: Function} {
-        return {};
-    };
 
     protected exportData() {
         let exportObj: any = {};

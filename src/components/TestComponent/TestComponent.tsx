@@ -21,6 +21,7 @@ export default class TestComponent extends VisualComponent {
             // debugger;
             // let displayed = await (new Common__Dialog__Confirm()).display();
             let com1 = new Common__Dialog__Confirm().setText('Sure?');
+            $('<div>').mountComponent(com1);
             // let displayed1 = await com1.display();
             // $(displayed1).appendTo(this.$element());
 

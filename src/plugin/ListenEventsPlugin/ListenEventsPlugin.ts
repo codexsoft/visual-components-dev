@@ -1,11 +1,12 @@
 import Events from "../../events/Events";
 import ComponentLifecycleEventInterface from "../../events/ComponentLifecycleEventInterface";
-import {implementsInterface} from "../../shortcut-functions/implements";
 import ListenEventsInterface, {listenEventsInterface} from "../../types/ListenEventsInterface";
 import Components from "../../Components";
 import Detect from "../../Detect";
 import * as _ from "lodash";
+import * as $ from "jquery";
 import AbstractPlugin from "../AbstractPlugin";
+import { implementsInterface } from "@codexsoft/function-implements-interface";
 
 export default class ListenEventsPlugin extends AbstractPlugin {
 
@@ -29,7 +30,7 @@ export default class ListenEventsPlugin extends AbstractPlugin {
                 component.$element().on(Components.TERMINATE_EVENTS, ( e: Event ) => {
 
                     if (!_.includes(['mousemove','mouseover','mouseout','mouseleave','mouseenter','mouseup','mousedown'], e.type)) {
-                        Components.logger._minor('Event '+e.type+' terminated in '+component.getClass());
+                        Components.logger.debug('Event '+e.type+' terminated in '+component.getClass());
                     }
 
                     e.stopPropagation();

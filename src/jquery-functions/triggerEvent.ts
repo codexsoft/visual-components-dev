@@ -16,6 +16,7 @@ declare global {
 function triggerEvent(this: JQuery, eventName: string, params: Object = {} ) {
 
     // debugger;
+    console.log('$.triggerEvent');
 
     $(this).each( function( index, elem: HTMLElement ){
         fireCustomEvent( elem, eventName, params );
