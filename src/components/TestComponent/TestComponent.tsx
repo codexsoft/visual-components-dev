@@ -1,13 +1,14 @@
 // import * as style from './TestComponent.style.less';
 import VisualComponent from "../../VisualComponent";
 import TestComponent3 from "../TestComponent3/TestComponent3";
-import Signal from "../../Signal";
 import Common__Dialog__Confirm from "../Common__Dialog__Confirm/class";
 import Common__Modal__Blurred from "../Common__Modal__Blurred/class";
 import JsxArray from "../../JsxArray";
 import * as $ from "jquery";
 import {ComponentRenderResultType} from "../../types/ComponentRenderResultType";
+import Signal from "../../plugin/SignalsPlugin/Signal";
 
+// export default class TestComponent extends VisualComponentWithSignals {
 export default class TestComponent extends VisualComponent {
 
     // protected activate(): void {

@@ -1,4 +1,4 @@
-import Signal from "../../Signal";
+import Signal from "./Signal";
 
 export default interface ListenSignalsInterface {
     listenSignals(): {[index: string]: Function};

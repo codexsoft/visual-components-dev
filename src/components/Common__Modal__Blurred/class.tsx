@@ -1,6 +1,7 @@
 import Common__Modal from "../Common__Modal/Common__Modal";
 import trigger from "../../shortcut-functions/trigger";
 import * as $ from "jquery";
+import Components from "../../Components";
 
 export default class Common__Modal__Blurred extends Common__Modal {
 
@@ -28,7 +29,7 @@ export default class Common__Modal__Blurred extends Common__Modal {
             .appendTo( $body )
             .css('z-index',zIndex);
 
-        $body.children('.VisualComponent').first()
+        $body.children(Components.visualComponentCssClass).first()
             .css('transition','all 0.5s ease')
             .css('filter','blur(2px) grayscale(1)')
         ;
@@ -44,7 +45,7 @@ export default class Common__Modal__Blurred extends Common__Modal {
 
     protected destroyModal() {
 
-        $('body').children('.VisualComponent').first()
+        $('body').children(Components.visualComponentCssClass).first()
             .css('filter','none');
 
         // уничтожаем модальное окно

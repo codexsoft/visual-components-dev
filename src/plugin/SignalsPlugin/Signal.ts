@@ -1,4 +1,7 @@
+import VisualComponent from "../../VisualComponent";
+
 /**
+ * @class Signal
  *
  * События поднимаются по DOM-дереву
  * При этом пользуемся ими обычно для обслуживания интерактивности
@@ -11,10 +14,7 @@
  *
  * В общем, события - проверять в обработчиках что они internal
  * А сигналы в диалогах - через handler-ы, там необязательно вложенность
- *
  */
-import VisualComponent from "./VisualComponent";
-
 export default class Signal {
 
     public name: string;
@@ -33,7 +33,7 @@ export default class Signal {
     }
 
     public from(component: VisualComponent): boolean {
-        return this.trip.some(function(current) {
+        return this.trip.some(function (current) {
             return component == current;
         });
     }

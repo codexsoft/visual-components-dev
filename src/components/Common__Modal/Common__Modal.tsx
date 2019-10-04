@@ -2,10 +2,10 @@ import * as _ from "lodash";
 import * as $ from "jquery";
 import ListenEventsInterface from "../../types/ListenEventsInterface";
 import VisualComponent from "../../VisualComponent";
-import Signal from "../../Signal";
 import Components from "../../Components";
 import KeyboardInterface from "../../plugin/KeypressPlugin/KeyboardInterface";
 import {signal} from "../../plugin/SignalsPlugin/SignalsPlugin";
+import Signal from "../../plugin/SignalsPlugin/Signal";
 
 export default abstract class Common__Modal extends VisualComponent implements KeyboardInterface, ListenEventsInterface {
 

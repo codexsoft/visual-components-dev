@@ -1,4 +1,3 @@
-import Signal from './Signal';
 import * as _ from 'lodash';
 import * as $ from 'jquery';
 import Components, {VisualComonentIdentificator} from "./Components";
@@ -12,6 +11,7 @@ import {ComponentRenderResultType} from "./types/ComponentRenderResultType";
 import NullLogger from "./logger/NullLogger";
 import LoggerInterface from "./logger/LoggerInterface";
 import {JsxRenderResultType} from "./types/JsxRenderResultType";
+import Signal from "./plugin/SignalsPlugin/Signal";
 
 export default abstract class VisualComponent {
 
@@ -25,7 +25,7 @@ export default abstract class VisualComponent {
 
     static LAYOUT_DEFAULT = 'default';
 
-    private __cachedDetectedClassname: string|null = null;
+    // private __cachedDetectedClassname: string|null = null;
 
     protected layout: string = VisualComponent.LAYOUT_DEFAULT;
 
@@ -207,11 +207,17 @@ export default abstract class VisualComponent {
 
     public getClass(): string {
         // __CLASS__ from typescript-magic-variable-plugin can be used instead
-        if (!this.__cachedDetectedClassname) {
-            this.__cachedDetectedClassname = Detect.className(this);
-        }
+        // if (!this.__cachedDetectedClassname) {
+        //     this.__cachedDetectedClassname = Detect.className(this);
+        // }
 
-        return this.__cachedDetectedClassname;
+        // return this.__cachedDetectedClassname;
+        // console.log('getting class of');
+        // console.log(this);
+        // console.log('this constructor is');
+        // console.log(this.constructor);
+        // return Components.findClassNameByClass(this.constructor);
+        return Components.findClassNameByComponent(this);
     }
 
     public class(): string {

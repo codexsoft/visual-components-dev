@@ -31,6 +31,8 @@ export default class Detect {
 
     static className(inputClass:Object|Function):string {
 
+        // debugger;
+
         let functionText: string;
 
         if ( _.isFunction(inputClass) ) {

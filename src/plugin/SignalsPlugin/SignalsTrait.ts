@@ -1,8 +1,9 @@
-import VisualComponent from "./VisualComponent";
-import ListenSignalsInterface from "./plugin/SignalsPlugin/ListenSignalsInterface";
 import Signal from "./Signal";
+// import Components from "../../Components";
+import {signal} from "./SignalsPlugin";
+import VisualComponent from "../../VisualComponent";
 
-export default abstract class VisualComponentWithSignals extends VisualComponent implements ListenSignalsInterface {
+export default class SignalsTrait {
 
     public signalCustomHandler(s: Signal): boolean|null {
         return null;
@@ -18,5 +19,9 @@ export default abstract class VisualComponentWithSignals extends VisualComponent
     public listenSignals(): {[index: string]: Function} {
         return {};
     };
+
+    public signal(this: VisualComponent, name: string, data: any = {}): boolean {
+        return signal(this, name, data);
+    }
 
 }

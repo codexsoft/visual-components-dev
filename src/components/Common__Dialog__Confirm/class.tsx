@@ -1,11 +1,14 @@
 import VisualComponent from "../../VisualComponent";
 import trigger from "../../shortcut-functions/trigger";
-import * as _ from "lodash";
-import ListenEventsInterface from "../../types/ListenEventsInterface";
-import KeyboardInterface from "../../plugin/KeypressPlugin/KeyboardInterface";
 import {signal} from "../../plugin/SignalsPlugin/SignalsPlugin";
+import SignalsTrait from "../../plugin/SignalsPlugin/SignalsTrait";
+import mixin from "../../shortcut-functions/mixin";
+import KeypressTrait from "../../plugin/KeypressPlugin/KeypressTrait";
+import EventsTrait from "../../types/EventsTrait";
 
-export default class Common__Dialog__Confirm extends VisualComponent implements KeyboardInterface, ListenEventsInterface {
+interface Common__Dialog__Confirm extends SignalsTrait, KeypressTrait, EventsTrait {}
+
+class Common__Dialog__Confirm extends VisualComponent implements SignalsTrait, KeypressTrait, EventsTrait {
 
     private text: string = '- NO TEXT PROVIDED FOR CONFIRMATION -';
     private confirmIsDefault: boolean = false;
@@ -18,13 +21,15 @@ export default class Common__Dialog__Confirm extends VisualComponent implements 
         // enter: () => { this.signal( this.isFocusedOnConfirm ? 'yes' : 'no' ); },
         enter: () => {signal(this, this.isFocusedOnConfirm ? 'yes' : 'no' ); },
     }; }
+
     // }, super.listenKeyboard()); }
 
     listenEvents() { return {
         // yes: (e: Event) => this.signal('yes'),
         // yes: (e: Event) => {console.log('signal YES'); this.signal('yes')},
         yes: (e: Event) => {console.log('signal YES'); signal(this, 'yes')},
-        no: (e: Event) => signal(this, 'no'),
+        no: (e: Event) => this.signal('no'),
+        // no: (e: Event) => signal(this, 'no'),
     };}
 
     protected async activate(): Promise<void> {
@@ -79,3 +84,7 @@ export default class Common__Dialog__Confirm extends VisualComponent implements 
     }
 
 }
+
+export default Common__Dialog__Confirm;
+
+mixin(Common__Dialog__Confirm, [SignalsTrait, KeypressTrait, EventsTrait]);

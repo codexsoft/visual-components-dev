@@ -1,13 +1,16 @@
 export default {
-    create: function<T>(name: string, details: T): CustomEvent {
+
+    create: function<T>(name: string, details?: T): CustomEvent {
         return new CustomEvent(name, {
             detail: details
         });
     },
+
     componentBeforeStart: 'visualComponent.beforeStart',
     componentAfterStart: 'visualComponent.afterStart',
     componentBeforeStop: 'visualComponent.beforeStop',
     componentAfterStop: 'visualComponent.afterStop',
+    componentSentSignal: 'visualComponent.signal',
 }
 
 /**

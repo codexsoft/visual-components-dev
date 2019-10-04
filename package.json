@@ -28,6 +28,7 @@
     "jquery": "^3.4.1",
     "keypress.js": "^2.1.5",
     "lodash": "^4.17.15",
+    "mixins-may-apply": "^1.0.2",
     "ts-loader": "^6.1.2",
     "typescript": "^3.6.3",
     "typescript-mix": "^3.1.3",
